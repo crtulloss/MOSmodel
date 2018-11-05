@@ -9,10 +9,10 @@ classdef parameters
         % reasonably "assumed" parameters
         NA = 5e17;                      % assumption
         tox = 10.5e-7;                  % from website
-        VFB = -0.75;                    % assumption
+        VFB = -1.75;                    % assumption
 
         % extracted parameters
-        u = 400;
+        u = 500;
 
         % calculated values
         phiF = constants.phit*log(parameters.NA/1e10);

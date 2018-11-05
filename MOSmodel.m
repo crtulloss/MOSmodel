@@ -46,13 +46,13 @@ for i = 1:num_data_sets
     plot(this_VGS, this_IDS*1e6);
     plot(this_VGS, modeled_IDS*1e6);
     
-%     % calculate rms error
-%     difference = this_IDS-modeled_IDS;
-%     normalized_difference = difference./this_IDS;
-%     sum_sq = sum(normalized_difference.^2)
-%     this_rms_error = sqrt(sum_sq/num);
-%     
-%     rms_error_vgs(i) = this_rms_error;
+    % calculate rms error
+    difference = this_IDS-modeled_IDS;
+    normalized_difference = difference./this_IDS;
+    sum_sq = sum(normalized_difference.^2);
+    this_rms_error = sqrt(sum_sq/num);
+    
+    rms_error_vgs(i) = this_rms_error;
 end
 
 title('I_{DS} vs. V_{GS}');
@@ -80,9 +80,13 @@ for i = 1:num_data_sets
     plot(this_VDS, this_IDS*1e6);
     plot(this_VDS, modeled_IDS*1e6);
     
-%     % calculate rms error
-%     this_rms_error = sqrt(sum(((this_IDS-modeled_IDS)./this_IDS).^2)/num);
-%     rms_error_vds(i) = this_rms_error;
+    % calculate rms error
+    difference = this_IDS-modeled_IDS;
+    normalized_difference = difference./this_IDS;
+    sum_sq = sum(normalized_difference.^2);
+    this_rms_error = sqrt(sum_sq/num);
+    
+    rms_error_vds(i) = this_rms_error;
 end
 
 title('I_{DS} vs. V_{DS}');
