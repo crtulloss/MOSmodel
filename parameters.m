@@ -12,7 +12,7 @@ classdef parameters
         VFB = -1.75;                    % assumption
 
         % extracted parameters
-        u = 500;
+        u0 = 500;
 
         % calculated values
         phiF = constants.phit*log(parameters.NA/1e10);
