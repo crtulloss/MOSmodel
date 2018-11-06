@@ -218,8 +218,7 @@ IDS_zeroBias_vds = current_from_VDS(this_W, this_L, gamma,...
 % output conductance
 % plot go = dID/dVDS vs VDS (fine spacing), esp around sat transition
 % for one or more VGS in strong inversion
-% should be smooth - see Fig. K.5
-% may be problematic if we use any interpolation e.g. VDSeff
+% should 
 
 
 %% Functions: Long-Channel Model
