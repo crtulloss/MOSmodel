@@ -6,11 +6,10 @@
 % Physical Constants
 classdef constants
     properties (Constant)
+        phit = 0.026;
         epox = 8.854e-14 * 3.9;
         sqrt2qeps = 5.8e-16;
-        k = 1.38e-23;
+        k = 
         q = 1.602e-19;
-        roomTemp = 300;
-        phit = constants.k*constants.roomTemp/constants.q;
     end
 end

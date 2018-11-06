@@ -177,11 +177,34 @@ this_L = 25e-4;
 
 % K1: DC tests
 
-% continuity and smooth behavior
-% plot ID vs. VDS for fixed VGS
+% continuity and smooth behavior - densely spaced plots
+% IDS vs. VDS for fixed VGS
+cont_VGS = 1;
+cont_VSB = 0;
+cont_VDS = linspace(-0.1, 4, 1000)';
+cont_IDS = current_from_VDS(this_W, this_L, gamma,...
+    VFB, phiF, cont_VGS, cont_VDS, cont_VSB);
+figure
+plot(cont_VDS, cont_IDS*1e6);
+title('Continuity Test: I_{DS} vs. V_{DS}');
+xlabel('V_{DS} (V)');
+ylabel('I_{DS} (\muA)');
 % logID vs VGS for fixed VDS, and inspect plots for discont/kinks
-% i.e. continuity of I(V) and derivatives, esp in transitions
-% between regions of inversion, around VDS=0, and between sat/nonsat
+cont_VDS = 1;
+cont_VSB = 0;
+cont_VGS = linspace(0, 4, 1000)';
+cont_log_IDS = log(current_from_VGS(this_W, this_L, gamma,...
+    VFB, phiF, cont_VGS, cont_VDS, cont_VSB));
+figure
+plot(cont_VGS, cont_log_IDS);
+title('Continuity Test: ln(I_{DS}) vs. V_{GS}');
+xlabel('V_{GS} (V)');
+ylabel('ln(I_{DS})');
+% inspect plots for discontinuities (problem with I),
+% and kinks (problem with derivative of I).
+% especially between regions of inversion (VGS plot),
+% around VDS=0, and between sat/nonsat (VDS plots)
+% when model is done, zoom in on these regions to check
 
 % behavior at zero bias
 IDS_zeroBias_vgs = current_from_VGS(this_W, this_L, gamma,...
@@ -190,9 +213,22 @@ IDS_zeroBias_vds = current_from_VDS(this_W, this_L, gamma,...
     VFB, phiF, 0, 0, 0);
 
 % weak-inversion behavior
-% plot SR = (IDS/VDS)/(dID/dVDS) as a function of VGS
+% SR = (IDS/VDS)/(dID/dVDS) as a function of VGS
 % for small VDS and several temps
-% select VDS = 0.5phit w phit at each temperature
+T_sweep = 273+[-40 27 125]';
+phit_sweep = constants.k * T_sweep / constants.q;
+WI_VDS_sweep = 0.5*phit_sweep;
+WI_VGS = linspace(0, 4, 1000);
+WI_VSB = 0;
+figure
+hold on
+for i = 1:3
+    WI_VDS = WI_VDS_sweep(i);
+    WI_IDS = current_from_VGS(this_W, this_L, gamma,...
+        VFB, phiF, WI_VGS, WI_VDS, WI_VSB);
+    
+end
+    
 % should be 2(sqrt(e)-1) = 1.297 in weak inversion, 
 % decrease toward 1 in strong inversion
 % check agains figure K.1
@@ -218,7 +254,8 @@ IDS_zeroBias_vds = current_from_VDS(this_W, this_L, gamma,...
 % output conductance
 % plot go = dID/dVDS vs VDS (fine spacing), esp around sat transition
 % for one or more VGS in strong inversion
-% should 
+% should be smooth - see Fig. K.5
+% may be problematic if we use any interpolation e.g. VDSeff
 
 
 %% Functions: Long-Channel Model

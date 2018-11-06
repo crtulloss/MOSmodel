@@ -37,7 +37,8 @@ for i = 1:num_data_sets
     this_VSB = data_G_25_25(num*i, 3);
     
     modeled_IDS = current_from_VGS(this_W, this_L, parameters.gamma,...
-        parameters.VFB, parameters.phiF, this_VGS, this_VDS, this_VSB);
+        parameters.VFB, parameters.phiF, constants.roomTemp,...
+        this_VGS, this_VDS, this_VSB);
     
     plot(this_VGS, this_IDS*1e6);
     plot(this_VGS, modeled_IDS*1e6,'*');
@@ -71,7 +72,8 @@ for i = 1:num_data_sets
     this_VSB = data_D_25_25(num*i, 3);
     
     modeled_IDS = current_from_VDS(this_W, this_L, parameters.gamma,...
-        parameters.VFB, parameters.phiF, this_VGS, this_VDS, this_VSB);
+        parameters.VFB, parameters.phiF, constants.roomTemp,...
+        this_VGS, this_VDS, this_VSB);
     
     plot(this_VDS, this_IDS*1e6);
     plot(this_VDS, modeled_IDS*1e6,'*');
@@ -113,7 +115,8 @@ for i = 1:num_data_sets
     this_VSB = data_G_25_25(num*i, 3);
     
     modeled_IDS = current_from_VGS(this_W, this_L, gamma,...
-        VFB, phiF, this_VGS, this_VDS, this_VSB);
+        VFB, phiF, constants.roomTemp,...
+        this_VGS, this_VDS, this_VSB);
     
     plot(this_VGS, this_IDS*1e6);
     plot(this_VGS, modeled_IDS*1e6,'*');
@@ -147,7 +150,8 @@ for i = 1:num_data_sets
     this_VSB = data_D_25_25(num*i, 3);
     
     modeled_IDS = current_from_VDS(this_W, this_L, gamma,...
-        VFB, phiF, this_VGS, this_VDS, this_VSB);
+        VFB, phiF, constants.roomTemp,...
+        this_VGS, this_VDS, this_VSB);
     
     plot(this_VDS, this_IDS*1e6);
     plot(this_VDS, modeled_IDS*1e6,'*');
@@ -177,25 +181,85 @@ this_L = 25e-4;
 
 % K1: DC tests
 
-% continuity and smooth behavior
-% plot ID vs. VDS for fixed VGS
+% continuity and smooth behavior - densely spaced plots
+% IDS vs. VDS for fixed VGS
+cont_VGS = 1;
+cont_VSB = 0;
+cont_VDS = linspace(-0.1, 4, 1000)';
+cont_IDS = current_from_VDS(this_W, this_L, gamma,...
+    VFB, phiF, constants.roomTemp,...
+    cont_VGS, cont_VDS, cont_VSB);
+figure
+plot(cont_VDS, cont_IDS*1e6);
+title('Continuity Test: I_{DS} vs. V_{DS}');
+xlabel('V_{DS} (V)');
+ylabel('I_{DS} (\muA)');
 % logID vs VGS for fixed VDS, and inspect plots for discont/kinks
-% i.e. continuity of I(V) and derivatives, esp in transitions
-% between regions of inversion, around VDS=0, and between sat/nonsat
+cont_VDS = 1;
+cont_VSB = 0;
+cont_VGS = linspace(0, 4, 1000)';
+cont_log_IDS = log(current_from_VGS(this_W, this_L, gamma,...
+    VFB, phiF, constants.roomTemp,...
+    cont_VGS, cont_VDS, cont_VSB));
+figure
+plot(cont_VGS, cont_log_IDS);
+title('Continuity Test: ln(I_{DS}) vs. V_{GS}');
+xlabel('V_{GS} (V)');
+ylabel('ln(I_{DS})');
+% inspect plots for discontinuities (problem with I),
+% and kinks (problem with derivative of I).
+% especially between regions of inversion (VGS plot),
+% around VDS=0, and between sat/nonsat (VDS plots)
+% when model is done, zoom in on these regions to check
 
 % behavior at zero bias
 IDS_zeroBias_vgs = current_from_VGS(this_W, this_L, gamma,...
-    VFB, phiF, 0, 0, 0);
+    VFB, phiF, constants.roomTemp,...
+    0, 0, 0);
 IDS_zeroBias_vds = current_from_VDS(this_W, this_L, gamma,...
-    VFB, phiF, 0, 0, 0);
+    VFB, phiF, constants.roomTemp,...
+    0, 0, 0);
+% both should be 0!
 
 % weak-inversion behavior
-% plot SR = (IDS/VDS)/(dID/dVDS) as a function of VGS
+% SR = (IDS/VDS)/(dID/dVDS) as a function of VGS
 % for small VDS and several temps
-% select VDS = 0.5phit w phit at each temperature
+T_sweep = 273+[-40 27 125]';
+WI_VGS = linspace(0, 4, 1000);
+WI_VSB = 0;
+delta_VDS = 0.00001;
+figure
+hold on
+for i = 1:3
+    T = T_sweep(i);
+    this_phit = constants.k * T / constants.q;
+    % fixed VDS, but need to find slope dID/dVDS,
+    % so pick two closely spaced VDS points
+    WI_VDS_1 = this_phit*0.5;
+    WI_VDS_2 = WI_VDS_1 + delta_VDS;
+    % calculate current at each of those point,
+    % as a function of VGS
+    WI_IDS_1 = current_from_VGS(this_W, this_L, gamma,...
+        VFB, phiF, T,...
+        WI_VGS, WI_VDS_1, WI_VSB);
+    WI_IDS_2 = current_from_VGS(this_W, this_L, gamma,...
+        VFB, phiF, T,...
+        WI_VGS, WI_VDS_2, WI_VSB);
+    % calculate dID/dVDS as a function of VGS
+    derivID = (WI_IDS_2 - WI_IDS_1)./delta_VDS;
+    % calculate SR
+    WI_SR = WI_IDS_1 ./ WI_VDS_1 ./ derivID;
+    
+    plot(WI_VGS, WI_SR);
+end
+plot(WI_VGS, 1.297*ones(size(WI_VGS)), '--');
+title('WI V_{DS} Dependence Test: S_R vs. V_{GS}');
+xlabel('V_{GS} (V)');
+ylabel('S_R');
+legend('T=-40\degC', 'T=27\degC', 'T=125\degC', '2(\sqrt\e - 1)');
 % should be 2(sqrt(e)-1) = 1.297 in weak inversion, 
 % decrease toward 1 in strong inversion
-% check agains figure K.1
+% check against figure K.1
 
 % symmetry
 % negative body bias, with symmetric VD and VS - but need
@@ -224,15 +288,22 @@ IDS_zeroBias_vds = current_from_VDS(this_W, this_L, gamma,...
 
 %% Functions: Long-Channel Model
 
-function IDS = current_from_VGS(W, L, gamma, VFB, phiF, VGS, VDS, VSB)
+function IDS = current_from_VGS(W, L, gamma, VFB, phiF, temp,...
+    VGS, VDS, VSB)
+
+% only matters for appendix K WI VDS-dependence test,
+% where temperature is allowed to change
+% otherwise phit = 0.026V
+phit = constants.k * temp / constants.q;
+phiF = phiF*phit/constants.phit;
 
 VGB = VGS + VSB;
 VDB = VDS + VSB;
 
 % calculate drain and source surface potentials
 func_psi_s0 = @(psi_s0_val) VGB - VFB -...
-    gamma*sqrt(psi_s0_val + constants.phit*exp(...
-    (psi_s0_val-2*phiF-VSB)/constants.phit)) - psi_s0_val;
+    gamma*sqrt(psi_s0_val + phit*exp(...
+    (psi_s0_val-2*phiF-VSB)/phit)) - psi_s0_val;
 psi_s0 = fsolve(func_psi_s0, ones(size(VGB))*VSB);
 
 % the difference psi_sL - psi_s0 can be small, so instead
@@ -240,10 +311,10 @@ psi_s0 = fsolve(func_psi_s0, ones(size(VGB))*VSB);
 % for it directly and us it to calculate psi_sL
 func_delta_psi_s = @(delta_psi_s_val) -delta_psi_s_val...
     -gamma*sqrt(delta_psi_s_val + psi_s0 +...
-    constants.phit*exp((delta_psi_s_val+psi_s0-...
-    2*phiF-VDB)/constants.phit)) +...
-    gamma*sqrt(psi_s0 + constants.phit*exp(...
-    (psi_s0-2*phiF-VSB)/constants.phit));
+    phit*exp((delta_psi_s_val+psi_s0-...
+    2*phiF-VDB)/phit)) +...
+    gamma*sqrt(psi_s0 + phit*exp(...
+    (psi_s0-2*phiF-VSB)/phit));
 delta_psi_s = fsolve(func_delta_psi_s, ones(size(VGB))*(VDB-VSB));
 
 % now calculate psi_sL
@@ -257,12 +328,19 @@ alpha = 1 + gamma./(sqrt(psi_sL) + sqrt(psi_s0));
 IDS1 = W/L*parameters.u0*parameters.Cox * (VGB - VFB...
     - psi_s0 - gamma*sqrt(psi_s0) - alpha.*delta_psi_s/2)...
     .*delta_psi_s;
-IDS2 = W/L*parameters.u0*parameters.Cox*constants.phit*alpha.*delta_psi_s;
+IDS2 = W/L*parameters.u0*parameters.Cox*phit*alpha.*delta_psi_s;
 IDS = IDS1+IDS2;
 
 end
 
-function IDS = current_from_VDS(W, L, gamma, VFB, phiF, VGS, VDS, VSB)
+function IDS = current_from_VDS(W, L, gamma, VFB, phiF, temp,...
+    VGS, VDS, VSB)
+
+% only matters for appendix K WI VDS-dependence test,
+% where temperature is allowed to change
+% otherwise phit = 0.026V
+phit = constants.k * temp / constants.q;
+phiF = phiF*phit/constants.phit;
 
 VGB = VGS + VSB;
 VDB = VDS + VSB;
@@ -272,8 +350,8 @@ VDB = VDS + VSB;
 % note that in this case psi_s0 is a constant since
 % VGB and VSB are both fixed
 func_psi_s0 = @(psi_s0_val) VGB - VFB -...
-    gamma*sqrt(psi_s0_val + constants.phit*exp(...
-    (psi_s0_val-2*phiF-VSB)/constants.phit)) - psi_s0_val;
+    gamma*sqrt(psi_s0_val + phit*exp(...
+    (psi_s0_val-2*phiF-VSB)/phit)) - psi_s0_val;
 psi_s0 = fsolve(func_psi_s0, VSB);
 
 % the difference psi_sL - psi_s0 can be small, so instead
@@ -281,10 +359,10 @@ psi_s0 = fsolve(func_psi_s0, VSB);
 % for it directly and us it to calculate psi_sL
 func_delta_psi_s = @(delta_psi_s_val) -delta_psi_s_val...
     -gamma*sqrt(delta_psi_s_val + psi_s0 +...
-    constants.phit*exp((delta_psi_s_val+psi_s0-...
-    2*phiF-VDB)/constants.phit)) +...
-    gamma*sqrt(psi_s0 + constants.phit*exp(...
-    (psi_s0-2*phiF-VSB)/constants.phit));
+    phit*exp((delta_psi_s_val+psi_s0-...
+    2*phiF-VDB)/phit)) +...
+    gamma*sqrt(psi_s0 + phit*exp(...
+    (psi_s0-2*phiF-VSB)/phit));
 delta_psi_s = fsolve(func_delta_psi_s, VDB-VSB);
 
 % now calculate psi_sL
@@ -298,7 +376,7 @@ alpha = 1 + gamma./(sqrt(psi_sL) + sqrt(psi_s0));
 IDS1 = W/L*parameters.u0*parameters.Cox * (VGB - VFB...
     - psi_s0 - gamma*sqrt(psi_s0) -...
     alpha.*delta_psi_s/2) .* delta_psi_s;
-IDS2 = W/L*parameters.u0*parameters.Cox*constants.phit*alpha.*delta_psi_s;
+IDS2 = W/L*parameters.u0*parameters.Cox*phit*alpha.*delta_psi_s;
 IDS = IDS1 + IDS2;
 
 end
