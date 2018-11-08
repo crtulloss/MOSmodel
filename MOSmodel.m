@@ -24,6 +24,11 @@ data_D_25_25 = dlmread('W25000_L25000_idvd.txt');
 this_W = 25e-4;
 this_L = 25e-4;
 
+%Datasets
+data_G = ["W25000_L2000_idvg.txt","W25000_L1000_idvg.txt",...
+    "W25000_L800_idvg.txt","W25000_L600_idvg.txt"];
+data_L = [2e-4;1e-4;0.8e-4;0.6e-4];
+
 % plot long-channel measured and modeled IDS vs VGS
 num=73;
 figure
@@ -58,6 +63,7 @@ end
 title('I_{DS} vs. V_{GS}');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
+hold off;
 
 % plot long-channel measured and modeled IDS vs VDS
 num=37;
@@ -93,6 +99,7 @@ end
 title('I_{DS} vs. V_{DS}');
 xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
+hold off;
 
 % run parameter extraction
 num_data_sets = 7;
@@ -136,6 +143,7 @@ end
 title('I_{DS} vs. V_{GS}');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
+hold off;
 
 % plot long-channel measured and modeled IDS vs VDS
 num=37;
@@ -171,6 +179,7 @@ end
 title('I_{DS} vs. V_{DS}');
 xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
+hold off;
 
 %Extract the required mobility parameters
 num=73;
@@ -210,6 +219,7 @@ end
 title('I_{DS} vs. V_{GS}');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
+hold off;
 
 % plot long-channel measured and modeled IDS vs VDS
 num=37;
@@ -245,6 +255,81 @@ end
 title('I_{DS} vs. V_{DS}');
 xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
+hold off;
+
+delta_L = extract_deltaL(data_G,data_L);
+this_L = this_L - delta_L;
+
+num=73;
+num_data_sets = 7;
+figure
+hold on
+
+% for rms error calculation, assuming all weights are 1
+rms_error_vgs4 = zeros(num_data_sets, 1);
+for i = 1:num_data_sets
+    this_VGS = data_G_25_25(num*(i-1)+1:num*i, 2);
+    this_IDS = data_G_25_25(num*(i-1)+1:num*i, 4);
+    
+    this_VDS = data_G_25_25(num*i, 1);
+    this_VSB = data_G_25_25(num*i, 3);
+    
+    modeled_IDS = current_from_VGS(this_W, this_L, gamma,...
+        VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
+        this_VGS, this_VDS, this_VSB);
+    
+    plot(this_VGS, this_IDS*1e6);
+    plot(this_VGS, modeled_IDS*1e6,'*');
+    
+    % calculate rms error
+    difference = this_IDS-modeled_IDS;
+    normalized_difference = difference./this_IDS;
+    sum_sq = sum(normalized_difference.^2);
+    this_rms_error = sqrt(sum_sq/num);
+    
+    rms_error_vgs4(i) = this_rms_error;
+end
+
+title('I_{DS} vs. V_{GS}');
+xlabel('V_{GS} (V)');
+ylabel('I_{DS} (\muA)');
+hold off;
+
+% plot long-channel measured and modeled IDS vs VDS
+num=37;
+figure
+hold on
+
+num_data_sets = 5;
+% for rms error calculation, assuming all weights are 1
+rms_error_vds4 = zeros(num_data_sets, 1);
+for i = 1:num_data_sets
+    this_VDS = data_D_25_25(num*(i-1)+1:num*i, 1);
+    this_IDS = data_D_25_25(num*(i-1)+1:num*i, 4);
+    
+    this_VGS = data_D_25_25(num*i, 2);
+    this_VSB = data_D_25_25(num*i, 3);
+    
+    modeled_IDS = current_from_VDS(this_W, this_L, gamma,...
+        VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
+        this_VGS, this_VDS, this_VSB);
+    
+    plot(this_VDS, this_IDS*1e6);
+    plot(this_VDS, modeled_IDS*1e6,'*');
+    
+    % calculate rms error
+    difference = this_IDS-modeled_IDS;
+    normalized_difference = difference./this_IDS;
+    sum_sq = sum(normalized_difference.^2);
+    this_rms_error = sqrt(sum_sq/num);
+    
+    rms_error_vds4(i) = this_rms_error;
+end
+
+title('I_{DS} vs. V_{DS}');
+xlabel('V_{DS} (V)');
+ylabel('I_{DS} (\muA)');
+hold off;
 
 % %% Validation: Appendix K and more
 % 
@@ -678,6 +763,25 @@ end
 
 %% Short-Channel Effects
 
-% not sure if these will be separate functions or multipliers
-% that are turned on/off above,
-% so this is just a placeholder
+%Extracting the value of delta L
+
+function delta_L = extract_deltaL(datasets,data_L)
+
+gm_max = zeros(numel(datasets),1);
+
+for i=1:numel(datasets)
+    data_G = dlmread(datasets(i));
+    this_VGS = data_G(1:73, 2);
+    this_IDS = data_G(1:73, 4);
+    gm = diff(this_IDS)./diff(this_VGS);
+    [gm_max(i) , ~] = max(gm);
+end
+
+A = [data_L*1e4 ones(numel(datasets),1)];
+B = 1./gm_max;
+lms_result = ((A'*A)\A')*B;
+slope = lms_result(1);
+yint = lms_result(2);
+delta_L = -yint/slope*1e-4;
+
+end
