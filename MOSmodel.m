@@ -209,100 +209,10 @@ end
 
 title('I_{DS} vs. V_{GS}');
 xlabel('V_{GS} (V)');
-<<<<<<< HEAD
 ylabel('I_{DS} (\muA)');
 
 % plot long-channel measured and modeled IDS vs VDS
 num=37;
-=======
-ylabel('S_R');
-legend('T=-40\circC', 'T=27\circC', 'T=125\circC', '2(\surd\ite - 1)');
-% should be 2(sqrt(e)-1) = 1.297 in weak inversion, 
-% decrease toward 1 in strong inversion
-% check against figure K.1
-
-% symmetry
-% voltages defined as in Fig. K.2,
-% except VB, which has the opposite polarity for consistency
-% with the rest of this model
-sym_VG = 1;
-sym_VB = -1;
-sym_VX = linspace(-0.2, 0.2, 1000)';
-sym_VD = sym_VX;
-sym_VS = -sym_VX;
-sym_VGS = sym_VG - sym_VS;
-sym_VDS = sym_VD - sym_VS;
-sym_VSB = sym_VS - sym_VB;
-sym_IDS = current_from_VDS(this_W, this_L, gamma,...
-    VFB, phiF, constants.roomTemp,...
-    sym_VGS, sym_VDS, sym_VSB);
-diff_VX = diff(sym_VX);
-sym_IDS_deriv1 = diff(sym_IDS)./diff_VX;
-sym_IDS_deriv2 = diff(sym_IDS_deriv1)./diff_VX(1:end-1);
-figure
-plot(sym_VX, sym_IDS);
-title('Symmetry Test: I_{X} vs. V_{X} (Figure K.2)');
-xlabel('V_{X} (V)');
-ylabel('I_{X} (A)');
-figure
-plot(sym_VX(1:end-1), sym_IDS_deriv1);
-title('Symmetry Test: dI_{X}/dV_{X} vs. V_{X} (Figure K.2)');
-xlabel('V_{X} (V)');
-ylabel('dI_{X}/dV_{X} (S)');
-figure
-plot(sym_VX(1:end-2), sym_IDS_deriv2);
-title('Symmetry Test: d^2I_{X}/dV_{X}^2 vs. V_{X} (Figure K.2)');
-xlabel('V_{X} (V)');
-ylabel('d^2I_{X}/dV_{X}^2 (S/V)');
-% check that ID is an odd function of Vx: VD or (-VS)
-% if not, how to measure (ID-IS)/2?
-% plot Ix, first and second derivatives as a function of Vx
-% this may be a problem for velocity saturation!
-
-% K2: Conductance Tests
-
-% weak and moderate inversion behavior
-% not for very low VGS because we are not modeling leakage,
-% and dividing by a very small IDS leads to unphysically high
-% transconductance efficiency
-gm_VGS = linspace(0.01, 4, 1000)';
-num_VSB = 7;
-gm_VSB = linspace(0, 3, num_VSB)';
-gm_VDS = 0.1;
-diff_gm_VGS = diff(gm_VGS);
-% plot gm/ID (transconductance efficiency) vs ID - semilogx
-% for several VSB, finely spaced VGS
-% from weak to strong inversion
-figure
-for i = 1:num_VSB
-    this_VSB = gm_VSB(i);
-    gm_IDS = current_from_VGS(this_W, this_L, gamma,...
-        VFB, phiF, constants.roomTemp,...
-        gm_VGS, gm_VDS, this_VSB);
-    
-    diff_gm_IDS = diff(gm_IDS);
-    gm = diff_gm_IDS./diff_gm_VGS;
-    gmeffic = gm./(gm_IDS(1:end-1));
-    
-    semilogx(gm_IDS(1:end-1), gmeffic);
-    hold on
-end
-semilogx(logspace(-11, -4, 10)', ones(10,1)/constants.phit, '--');
-title('Transconductance Test: g_m/I_{DS} vs. I_{DS}');
-xlabel('I_{DS} (A)');
-ylabel('g_m/I_{DS} (V^{-1})');
-axis([1e-11, 1e-4, 0, 40]);
-% curves should vary smoothly with VGS, and in weak inversion should
-% approach 1/phit as VSB increases
-% curves should peak and then decrease as ID decreases - not constant!
-
-% output conductance
-num_VGS = 5;
-g0_VGS = linspace(2, 4, num_VGS)';
-g0_VSB = 0;
-g0_VDS = linspace(0, 4, 1000);
-diff_g0_VDS = diff(g0_VDS);
->>>>>>> a4fe8da94abe5703da1a6803c6158089e27d46f0
 figure
 hold on
 
@@ -528,7 +438,7 @@ ylabel('I_{DS} (\muA)');
 % % zoom in around sat transition
 % % should be smooth - see Fig. K.5
 % % may be problematic if we use any interpolation e.g. VDSeff
-
+% 
 
 %% Functions: Long-Channel Model
 
