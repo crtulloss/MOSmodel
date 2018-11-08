@@ -262,14 +262,17 @@ legend('T=-40\circC', 'T=27\circC', 'T=125\circC', '2(\surd\ite - 1)');
 % check against figure K.1
 
 % symmetry
-% voltages defined as in Fig. K.2
-sym_VGS = 1;
-sym_VB = 1;
-sym_VX = linspace(-0.2, 0.2, 1000);
+% voltages defined as in Fig. K.2,
+% except VB, which has the opposite polarity for consistency
+% with the rest of this model
+sym_VG = 1;
+sym_VB = -1;
+sym_VX = linspace(-0.2, 0.2, 1000)';
 sym_VD = sym_VX;
 sym_VS = -sym_VX;
+sym_VGS = sym_VG - sym_VS;
 sym_VDS = sym_VD - sym_VS;
-sym_VSB = sym_VS + sym_VB;
+sym_VSB = sym_VS - sym_VB;
 sym_IDS = current_from_VDS(this_W, this_L, gamma,...
     VFB, phiF, constants.roomTemp,...
     sym_VGS, sym_VDS, sym_VSB);
