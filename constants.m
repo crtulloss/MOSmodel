@@ -7,7 +7,7 @@
 classdef constants
     properties (Constant)
         epox = 8.854e-14 * 3.9;
-        sqrt2qeps = 5.8e-16;
+        eps = 8.854e-14 * 11.9;
         k = 1.38e-23;
         q = 1.602e-19;
         roomTemp = 300;

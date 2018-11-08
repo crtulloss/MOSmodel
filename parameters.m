@@ -17,6 +17,6 @@ classdef parameters
         % calculated values
         phiF = constants.phit*log(parameters.NA/1e10);
         Cox = constants.epox/parameters.tox;
-        gamma = constants.sqrt2qeps*sqrt(parameters.NA)/parameters.Cox;
+        gamma = sqrt(2*constants.q*constants.eps*parameters.NA)/parameters.Cox;
     end
 end
