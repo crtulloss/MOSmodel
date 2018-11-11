@@ -6,12 +6,11 @@
 % Parameters
 classdef parameters
     properties (Constant)
-        % reasonably "assumed" parameters
+        % reasonably "assumed" parameters -
+        % used as starting assumptions
         NA = 5e17;                      % assumption
         tox = 10.5e-7;                  % from website
         VFB = -1.75;                    % assumption
-
-        % extracted parameters
         u0 = 500;
 
         % calculated values

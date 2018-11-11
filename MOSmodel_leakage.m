@@ -18,16 +18,13 @@ close all
 % name format: data_G/D_W_L
 % file columns:  VDS	VGS     VSB     IDS
 
-% long-channel data - used for extraction
+% long-channel data
 data_G_25_25 = dlmread('W25000_L25000_idvg.txt');
 data_D_25_25 = dlmread('W25000_L25000_idvd.txt');
 this_W = 25e-4;
 this_L = 25e-4;
 
-% other datasets used for deltaL extraction
-data_G = ["W25000_L2000_idvg.txt","W25000_L1000_idvg.txt",...
-    "W25000_L800_idvg.txt","W25000_L600_idvg.txt"];
-data_L = [2e-4;1e-4;0.8e-4;0.6e-4];
+leakage_lim = 1.4e-11;
 
 % plot long-channel measured and modeled IDS vs VGS
 num=73;
@@ -44,25 +41,33 @@ for i = 1:num_data_sets
     this_VDS = data_G_25_25(num*i, 1);
     this_VSB = data_G_25_25(num*i, 3);
     
-    modeled_IDS = current(this_W, this_L, parameters.gamma,...
+    modeled_IDS = current_from_VGS(this_W, this_L, parameters.gamma,...
         parameters.VFB, parameters.phiF, parameters.u0, 0, 0,...
         constants.roomTemp, this_VGS, this_VDS, this_VSB);
     
-    plot(this_VGS, this_IDS*1e6, '*');
-    plot(this_VGS, modeled_IDS*1e6);
+    plot(this_VGS, this_IDS*1e6);
+    plot(this_VGS, modeled_IDS*1e6,'*');
+    
+    modeled_IDS_notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+    this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
+    
+    num_notbelow_leakage = length(this_IDS);
     
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow_leakage);
     
     rms_error_vgs(i) = this_rms_error;
 end
-title('I_{DS} vs. V_{GS}: Assumed Parameters');
+
+title('I_{DS} vs. V_{GS}');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
-hold off;
 
 % plot long-channel measured and modeled IDS vs VDS
 num=37;
@@ -79,26 +84,33 @@ for i = 1:num_data_sets
     this_VGS = data_D_25_25(num*i, 2);
     this_VSB = data_D_25_25(num*i, 3);
     
-    modeled_IDS = current(this_W, this_L, parameters.gamma,...
+    modeled_IDS = current_from_VDS(this_W, this_L, parameters.gamma,...
         parameters.VFB, parameters.phiF, parameters.u0, 0, 0,...
         constants.roomTemp, this_VGS, this_VDS, this_VSB);
     
-    plot(this_VDS, this_IDS*1e6,'*');
-    plot(this_VDS, modeled_IDS*1e6);
+    plot(this_VDS, this_IDS*1e6);
+    plot(this_VDS, modeled_IDS*1e6,'*');
+    
+    modeled_IDS_notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+    this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
+    
+    num_notbelow_leakage = length(this_IDS);
     
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow_leakage);
     
     rms_error_vds(i) = this_rms_error;
 end
 
-title('I_{DS} vs. V_{DS}: Assumed Parameters');
+title('I_{DS} vs. V_{DS}');
 xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
-hold off;
 
 % run parameter extraction
 num_data_sets = 7;
@@ -123,26 +135,33 @@ for i = 1:num_data_sets
     this_VDS = data_G_25_25(num*i, 1);
     this_VSB = data_G_25_25(num*i, 3);
     
-    modeled_IDS = current(this_W, this_L, gamma,...
+    modeled_IDS = current_from_VGS(this_W, this_L, gamma,...
         VFB, phiF, parameters.u0, 0, 0, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
-    plot(this_VGS, this_IDS*1e6, '*');
-    plot(this_VGS, modeled_IDS*1e6);
+    plot(this_VGS, this_IDS*1e6);
+    plot(this_VGS, modeled_IDS*1e6,'*');
+    
+    modeled_IDS_notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+    this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
+    
+    num_notbelow_leakage = length(this_IDS);
     
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow_leakage);
     
     rms_error_vgs2(i) = this_rms_error;
 end
 
-title('I_{DS} vs. V_{GS}: Long-Channel Params Extracted');
+title('I_{DS} vs. V_{GS}');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
-hold off;
 
 % plot long-channel measured and modeled IDS vs VDS
 num=37;
@@ -159,28 +178,35 @@ for i = 1:num_data_sets
     this_VGS = data_D_25_25(num*i, 2);
     this_VSB = data_D_25_25(num*i, 3);
     
-    modeled_IDS = current(this_W, this_L, gamma,...
+    modeled_IDS = current_from_VDS(this_W, this_L, gamma,...
         VFB, phiF, parameters.u0, 0, 0, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
-    plot(this_VDS, this_IDS*1e6,'*');
-    plot(this_VDS, modeled_IDS*1e6);
+    plot(this_VDS, this_IDS*1e6);
+    plot(this_VDS, modeled_IDS*1e6,'*');
+    
+    modeled_IDS_notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+    this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
+    
+    num_notbelow_leakage = length(this_IDS);
     
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow_leakage);
     
     rms_error_vds2(i) = this_rms_error;
 end
 
-title('I_{DS} vs. V_{DS}: Long-Channel Params Extracted');
+title('I_{DS} vs. V_{DS}');
 xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
-hold off;
 
-% Extract the required mobility parameters
+%Extract the required mobility parameters
 num=73;
 num_data_sets = 7;
 
@@ -188,7 +214,6 @@ num_data_sets = 7;
     constants.roomTemp, data_G_25_25, num_data_sets, num);
 
 figure
-hold on
 
 % for rms error calculation, assuming all weights are 1
 rms_error_vgs3 = zeros(num_data_sets, 1);
@@ -199,26 +224,34 @@ for i = 1:num_data_sets
     this_VDS = data_G_25_25(num*i, 1);
     this_VSB = data_G_25_25(num*i, 3);
     
-    modeled_IDS = current(this_W, this_L, gamma,...
+    modeled_IDS = current_from_VGS(this_W, this_L, gamma,...
         VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
-    plot(this_VGS, this_IDS*1e6,'*');
-    plot(this_VGS, modeled_IDS*1e6);
+    semilogy(this_VGS, this_IDS*1e6);
+    hold on
+    semilogy(this_VGS, modeled_IDS*1e6,'*');
+    
+    modeled_IDS_notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+    this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
+    
+    num_notbelow_leakage = length(this_IDS);
     
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow_leakage);
     
     rms_error_vgs3(i) = this_rms_error;
 end
 
-title('I_{DS} vs. V_{GS}: Mobility Params Extracted');
+title('I_{DS} vs. V_{GS}');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
-hold off;
 
 % plot long-channel measured and modeled IDS vs VDS
 num=37;
@@ -235,113 +268,44 @@ for i = 1:num_data_sets
     this_VGS = data_D_25_25(num*i, 2);
     this_VSB = data_D_25_25(num*i, 3);
     
-    modeled_IDS = current(this_W, this_L, gamma,...
+    modeled_IDS = current_from_VDS(this_W, this_L, gamma,...
         VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
-    plot(this_VDS, this_IDS*1e6, '*');
-    plot(this_VDS, modeled_IDS*1e6);
+    plot(this_VDS, this_IDS*1e6);
+    plot(this_VDS, modeled_IDS*1e6,'*');
+    
+    modeled_IDS_notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+    this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
+    
+    num_notbelow_leakage = length(this_IDS);
     
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow_leakage);
     
     rms_error_vds3(i) = this_rms_error;
 end
 
-title('I_{DS} vs. V_{DS}: Mobility Params Extracted');
+title('I_{DS} vs. V_{DS}');
 xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
-hold off;
 
-% Extract deltaL
+%% Validation: Appendix K and more
 
-delta_L = extract_deltaL(data_G,data_L);
-this_L = this_L - delta_L;
+% all these tests for W=L=25um
+this_W = 25e-4;
+this_L = 25e-4;
 
-num=73;
-num_data_sets = 7;
-figure
-hold on
+% rms error - remove leakage points bc we aren't doing leakage?
 
-% for rms error calculation, assuming all weights are 1
-rms_error_vgs4 = zeros(num_data_sets, 1);
-for i = 1:num_data_sets
-    this_VGS = data_G_25_25(num*(i-1)+1:num*i, 2);
-    this_IDS = data_G_25_25(num*(i-1)+1:num*i, 4);
-    
-    this_VDS = data_G_25_25(num*i, 1);
-    this_VSB = data_G_25_25(num*i, 3);
-    
-    modeled_IDS = current(this_W, this_L, gamma,...
-        VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
-        this_VGS, this_VDS, this_VSB);
-    
-    plot(this_VGS, this_IDS*1e6,'*');
-    plot(this_VGS, modeled_IDS*1e6);
-    
-    % calculate rms error
-    difference = this_IDS-modeled_IDS;
-    normalized_difference = difference./this_IDS;
-    sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
-    
-    rms_error_vgs4(i) = this_rms_error;
-end
+% remember to add log plots back!
 
-title('I_{DS} vs. V_{GS}: Delta L Extracted');
-xlabel('V_{GS} (V)');
-ylabel('I_{DS} (\muA)');
-hold off;
-
-% plot long-channel measured and modeled IDS vs VDS
-num=37;
-figure
-hold on
-
-num_data_sets = 5;
-% for rms error calculation, assuming all weights are 1
-rms_error_vds4 = zeros(num_data_sets, 1);
-for i = 1:num_data_sets
-    this_VDS = data_D_25_25(num*(i-1)+1:num*i, 1);
-    this_IDS = data_D_25_25(num*(i-1)+1:num*i, 4);
-    
-    this_VGS = data_D_25_25(num*i, 2);
-    this_VSB = data_D_25_25(num*i, 3);
-    
-    modeled_IDS = current(this_W, this_L, gamma,...
-        VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
-        this_VGS, this_VDS, this_VSB);
-    
-    plot(this_VDS, this_IDS*1e6,'*');
-    plot(this_VDS, modeled_IDS*1e6);
-    
-    % calculate rms error
-    difference = this_IDS-modeled_IDS;
-    normalized_difference = difference./this_IDS;
-    sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
-    
-    rms_error_vds4(i) = this_rms_error;
-end
-
-title('I_{DS} vs. V_{DS}: Delta L Extracted');
-xlabel('V_{DS} (V)');
-ylabel('I_{DS} (\muA)');
-hold off;
-
-% %% Validation: Appendix K and more
-% 
-% % all these tests for W=L=25um
-% this_W = 25e-4;
-% this_L = 25e-4;
-% 
-% % rms error - remove leakage points bc we aren't doing leakage?
-% 
-% % remember to add log plots back!
-% 
 % % K1: DC tests
 % 
 % % continuity and smooth behavior - densely spaced plots
@@ -349,8 +313,8 @@ hold off;
 % cont_VGS = 1;
 % cont_VSB = 0;
 % cont_VDS = linspace(-0.1, 4, 1000)';
-% cont_IDS = current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
+% cont_IDS = current_from_VDS(this_W, this_L, gamma,...
+%     VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
 %     cont_VGS, cont_VDS, cont_VSB);
 % figure
 % plot(cont_VDS, cont_IDS*1e6);
@@ -361,8 +325,8 @@ hold off;
 % cont_VDS = 1;
 % cont_VSB = 0;
 % cont_VGS = linspace(0, 4, 1000)';
-% cont_log_IDS = log(current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
+% cont_log_IDS = log(current_from_VGS(this_W, this_L, gamma,...
+%     VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
 %     cont_VGS, cont_VDS, cont_VSB));
 % figure
 % plot(cont_VGS, cont_log_IDS);
@@ -376,11 +340,11 @@ hold off;
 % % when model is done, zoom in on these regions to check
 % 
 % % behavior at zero bias
-% IDS_zeroBias_vgs = current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
+% IDS_zeroBias_vgs = current_from_VGS(this_W, this_L, gamma,...
+%     VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
 %     0, 0, 0);
-% IDS_zeroBias_vds = current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
+% IDS_zeroBias_vds = current_from_VDS(this_W, this_L, gamma,...
+%     VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
 %     0, 0, 0);
 % % both should be 0!
 % 
@@ -402,11 +366,11 @@ hold off;
 %     WI_VDS_2 = WI_VDS_1 + delta_VDS;
 %     % calculate current at each of those point,
 %     % as a function of VGS
-%     WI_IDS_1 = current(this_W, this_L, gamma,...
-%         VFB, phiF, T,...
+%     WI_IDS_1 = current_from_VGS(this_W, this_L, gamma,...
+%         VFB, phiF, mu0, a_theta, eta_E, T,...
 %         WI_VGS, WI_VDS_1, WI_VSB);
-%     WI_IDS_2 = current(this_W, this_L, gamma,...
-%         VFB, phiF, T,...
+%     WI_IDS_2 = current_from_VGS(this_W, this_L, gamma,...
+%         VFB, phiF, mu0, a_theta, eta_E, T,...
 %         WI_VGS, WI_VDS_2, WI_VSB);
 %     % calculate dID/dVDS as a function of VGS
 %     derivID = (WI_IDS_2 - WI_IDS_1)./delta_VDS;
@@ -436,8 +400,8 @@ hold off;
 % sym_VGS = sym_VG - sym_VS;
 % sym_VDS = sym_VD - sym_VS;
 % sym_VSB = sym_VS - sym_VB;
-% sym_IDS = current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
+% sym_IDS = current_from_VDS(this_W, this_L, gamma,...
+%     VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
 %     sym_VGS, sym_VDS, sym_VSB);
 % diff_VX = diff(sym_VX);
 % sym_IDS_deriv1 = diff(sym_IDS)./diff_VX;
@@ -479,8 +443,8 @@ hold off;
 % figure
 % for i = 1:num_VSB
 %     this_VSB = gm_VSB(i);
-%     gm_IDS = current(this_W, this_L, gamma,...
-%         VFB, phiF, constants.roomTemp,...
+%     gm_IDS = current_from_VGS(this_W, this_L, gamma,...
+%         VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
 %         gm_VGS, gm_VDS, this_VSB);
 %     
 %     diff_gm_IDS = diff(gm_IDS);
@@ -509,8 +473,8 @@ hold off;
 % hold on
 % for i = 1:num_VGS
 %     this_VGS = g0_VGS(i);
-%     g0_IDS = current(this_W, this_L, gamma,...
-%         VFB, phiF, constants.roomTemp,...
+%     g0_IDS = current_from_VDS(this_W, this_L, gamma,...
+%         VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
 %         this_VGS, g0_VDS, g0_VSB);
 %     
 %     diff_g0_IDS = diff(g0_IDS);
@@ -524,156 +488,64 @@ hold off;
 % % zoom in around sat transition
 % % should be smooth - see Fig. K.5
 % % may be problematic if we use any interpolation e.g. VDSeff
-% 
 
-%% Plots for all Channel Lengths
 
-close all
+%% Functions: Long-Channel Model
 
-this_W = 25e-4;
+function IDS = current_from_VGS(W, L, gamma, VFB, phiF, mu0, a_theta,...
+    eta_E, temp, VGS, VDS, VSB)
 
-f = filesep;
-vg_dir = 'vg_data';
+% only matters for appendix K WI VDS-dependence test,
+% where temperature is allowed to change
+% otherwise phit = 0.026V
+phit = constants.k * temp / constants.q;
+phiF = phiF*phit/constants.phit;
 
-num_vg = 73;
-num_vd = 37;
+VGB = VGS + VSB;
+VDB = VDS + VSB;
 
-num_datasets_vg = 9;
-num_datasets_vd = 10;
+% calculate drain and source surface potentials
+func_psi_s0 = @(psi_s0_val) VGB - VFB -...
+    gamma*sqrt(psi_s0_val + phit*exp(...
+    (psi_s0_val-2*phiF-VSB)/phit)) - psi_s0_val;
+psi_s0 = fsolve(func_psi_s0, ones(size(VGB))*VSB);
 
-vg_listing = dir(vg_dir);
-vg_listing = vg_listing(~ismember({vg_listing.name}, {'.', '..'}));
+% the difference psi_sL - psi_s0 can be small, so instead
+% of making that the difference between two solutions, we solve
+% for it directly and us it to calculate psi_sL
+func_delta_psi_s = @(delta_psi_s_val) -delta_psi_s_val...
+    -gamma*sqrt(delta_psi_s_val + psi_s0 +...
+    phit*exp((delta_psi_s_val+psi_s0-...
+    2*phiF-VDB)/phit)) +...
+    gamma*sqrt(psi_s0 + phit*exp(...
+    (psi_s0-2*phiF-VSB)/phit));
+delta_psi_s = fsolve(func_delta_psi_s, ones(size(VGB))*(VDB-VSB));
 
-rms_error_vgs = zeros(size(vg_listing, 1), num_data_sets);
+% now calculate psi_sL
+psi_sL = psi_s0 + delta_psi_s;
 
-for k = 1:size(vg_listing, 1)
-    
-    fname = vg_listing(k).name;
-    
-    splitname = strsplit(fname, '_');
-    L_val = str2double(splitname{2}(2:end));
-    this_L = L_val * 1e-7;
-    
-    data = dlmread([vg_dir, f, fname]);
-    
-    figure(4*k-3)
-    hold on
-    figure(4*k-2)
-    hold on
-    VSB_legend = cell(14, 1);
-    for m = 1:7
-        this_VGS = data(num_vg*(m-1)+1:num_vg*m, 2);
-        this_IDS = data(num_vg*(m-1)+1:num_vg*m, 4);
-    
-        this_VDS = data(num_vg*m, 1);
-        this_VSB = data(num_vg*m, 3);
-        
-        VSB_legend{m*2-1} = strcat('V_{SB} = ', num2str(this_VSB),...
-            ', measured');
-        VSB_legend{m*2} = strcat('V_{SB} = ', num2str(this_VSB),...
-            ', modeled');
-    
-        modeled_IDS = current(this_W, this_L, gamma,...
-            VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
-            this_VGS, this_VDS, this_VSB);
-        
-        ln_this_IDS = log(this_IDS);
-        ln_modeled_IDS = log(modeled_IDS);
-        
-        figure(4*k-3)
-        plot(this_VGS, this_IDS*1e6,'*');
-        plot(this_VGS, modeled_IDS*1e6);
-        figure(4*k-2)
-        plot(this_VGS, ln_this_IDS,'*');
-        plot(this_VGS, ln_modeled_IDS);
-        
-        % calculate rms error
-        difference = this_IDS-modeled_IDS;
-        normalized_difference = difference./this_IDS;
-        sum_sq = sum(normalized_difference.^2);
-        this_rms_error = sqrt(sum_sq/num);
-    
-        rms_error_vgs(k, m) = this_rms_error;
-    end
-    
-    this_VDS = data(num_vg*m, 1);
-    
-    figure(4*k-3)
-    title(['I_{DS} vs. V_{GS}, L = ', num2str(L_val/1000),...
-        '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
-    xlabel('V_{GS} (V)');
-    ylabel('I_{DS} (\muA)');
-    legend(VSB_legend)
+% alpha calculation - note that this is a DIFFERENT definition
+% from the way alpha is defined in the book
+alpha = 1 + gamma./(sqrt(psi_sL) + sqrt(psi_s0));
 
-    figure(4*k-2)
-    title(['ln(I_{DS}) vs. V_{GS}, L = ', num2str(L_val/1000),...
-        '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
-    xlabel('V_{GS} (V)');
-    ylabel('ln(I_{DS})');
-    legend(VSB_legend)
-    
-    figure(4*k-1)
-    hold on
-    figure(4*k)
-    hold on
-    VSB_legend = cell(4, 1);
-    for m = 8:9
-        this_VGS = data(num_vg*(m-1)+1:num_vg*m, 2);
-        this_IDS = data(num_vg*(m-1)+1:num_vg*m, 4);
-    
-        this_VDS = data(num_vg*m, 1);
-        this_VSB = data(num_vg*m, 3);
-        
-        VSB_legend{(m-7)*2-1} =...
-            strcat('V_{SB} = ', num2str(this_VSB),...
-            ', measured');
-        VSB_legend{(m-7)*2} =...
-            strcat('V_{SB} = ', num2str(this_VSB),...
-            ', modeled');
-    
-        modeled_IDS = current(this_W, this_L, gamma,...
-            VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
-            this_VGS, this_VDS, this_VSB);
-        
-        ln_this_IDS = log(this_IDS);
-        ln_modeled_IDS = log(modeled_IDS);
-        
-        figure(4*k-1)
-        plot(this_VGS, this_IDS*1e6,'*');
-        plot(this_VGS, modeled_IDS*1e6);
-        figure(4*k)
-        plot(this_VGS, ln_this_IDS,'*');
-        plot(this_VGS, ln_modeled_IDS);
-        
-        % calculate rms error
-        difference = this_IDS-modeled_IDS;
-        normalized_difference = difference./this_IDS;
-        sum_sq = sum(normalized_difference.^2);
-        this_rms_error = sqrt(sum_sq/num);
-    
-        rms_error_vgs(k, m) = this_rms_error;
-    end
-    
-    this_VDS = data(num_vg*m, 1);
-    
-    figure(4*k-1)
-    title(['I_{DS} vs. V_{GS}, L = ', num2str(L_val/1000),...
-        '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
-    xlabel('V_{GS} (V)');
-    ylabel('I_{DS} (\muA)');
-    legend(VSB_legend)
+QB0 = -gamma*parameters.Cox.*sqrt(psi_s0);
+QBL = -gamma*parameters.Cox.*sqrt(psi_sL);
+QB_avg = (QB0 + QBL)/2;
 
-    figure(4*k)
-    title(['ln(I_{DS}) vs. V_{GS}, L = ', num2str(L_val/1000),...
-        '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
-    xlabel('V_{GS} (V)');
-    ylabel('ln(I_{DS})');
-    legend(VSB_legend)
+QI_avg = -parameters.Cox.*(VGB - VFB - (psi_s0+psi_sL)/2) - QB_avg;
+
+mu = mu0./(1-a_theta/constants.eps.*(QB_avg + eta_E*QI_avg));
+
+% calculate drain current
+IDS1 = W/L*mu*parameters.Cox .* (VGB - VFB...
+    - psi_s0 - gamma*sqrt(psi_s0) - alpha.*delta_psi_s/2)...
+    .*delta_psi_s;
+IDS2 = W/L*mu*parameters.Cox*phit.*alpha.*delta_psi_s;
+IDS = IDS1+IDS2;
+
 end
 
-%% Current-Calculating Function
-
-function IDS = current(W, L, gamma, VFB, phiF, mu0, a_theta,...
+function IDS = current_from_VDS(W, L, gamma, VFB, phiF, mu0, a_theta, ...
     eta_E, temp, VGS, VDS, VSB)
 
 % only matters for appendix K WI VDS-dependence test,
@@ -687,12 +559,11 @@ VDB = VDS + VSB;
 
 % calculate drain and source surface potentials
 
-% note that this works whether VSB is scalar or vector
-% same for VDB-VSB below
+% VSB can be a vector, so psi_s0 is still a vector
 func_psi_s0 = @(psi_s0_val) VGB - VFB -...
     gamma*sqrt(psi_s0_val + phit*exp(...
     (psi_s0_val-2*phiF-VSB)/phit)) - psi_s0_val;
-psi_s0 = fsolve(func_psi_s0, ones(size(VGB)).*VSB);
+psi_s0 = fsolve(func_psi_s0, VSB);
 
 % the difference psi_sL - psi_s0 can be small, so instead
 % of making that the difference between two solutions, we solve
@@ -703,7 +574,7 @@ func_delta_psi_s = @(delta_psi_s_val) -delta_psi_s_val...
     2*phiF-VDB)/phit)) +...
     gamma*sqrt(psi_s0 + phit*exp(...
     (psi_s0-2*phiF-VSB)/phit));
-delta_psi_s = fsolve(func_delta_psi_s, ones(size(VGB)).*(VDB-VSB));
+delta_psi_s = fsolve(func_delta_psi_s, VDB-VSB);
 
 % now calculate psi_sL
 psi_sL = psi_s0 + delta_psi_s;
@@ -714,8 +585,8 @@ alpha = 1 + gamma./(sqrt(psi_sL) + sqrt(psi_s0));
 
 QB0 = -gamma*parameters.Cox.*sqrt(psi_s0);
 QBL = -gamma*parameters.Cox.*sqrt(psi_sL);
-
 QB_avg = (QB0 + QBL)/2;
+
 QI_avg = -parameters.Cox.*(VGB - VFB - (psi_s0+psi_sL)/2) - QB_avg;
 
 mu = mu0./(1-a_theta/constants.eps.*(QB_avg + eta_E*QI_avg));
@@ -728,8 +599,6 @@ IDS2 = W/L.*mu*parameters.Cox*phit.*alpha.*delta_psi_s;
 IDS = IDS1 + IDS2;
 
 end
-
-%% Parameter Extraction
 
 %Extracting gamma from plots of Vt against sqrt(Vsb + phi0)
 
@@ -859,25 +728,6 @@ end
 
 %% Short-Channel Effects
 
-%Extracting the value of delta L
-
-function delta_L = extract_deltaL(datasets,data_L)
-
-gm_max = zeros(numel(datasets),1);
-
-for i=1:numel(datasets)
-    data_G = dlmread(datasets(i));
-    this_VGS = data_G(1:73, 2);
-    this_IDS = data_G(1:73, 4);
-    gm = diff(this_IDS)./diff(this_VGS);
-    [gm_max(i) , ~] = max(gm);
-end
-
-A = [data_L*1e4 ones(numel(datasets),1)];
-B = 1./gm_max;
-lms_result = ((A'*A)\A')*B;
-slope = lms_result(1);
-yint = lms_result(2);
-delta_L = -yint/slope*1e-4;
-
-end
+% not sure if these will be separate functions or multipliers
+% that are turned on/off above,
+% so this is just a placeholder
