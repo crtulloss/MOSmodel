@@ -12,28 +12,35 @@ clc;
 
 % Parameters and physical constants are each in their own file
 
-%% Plots
+%% Long-Channel Model Construction
+% We add a few effects at a time to show model development
 close all
+
+% OS-indpendent file separator and directory info
+f = filesep;
+vg_dir = 'vg_data';
+vd_dir = 'vd_data';
 
 % name format: data_G/D_W_L
 % file columns:  VDS	VGS     VSB     IDS
 
 % long-channel data - used for extraction
-data_G_25_25 = dlmread('W25000_L25000_idvg.txt');
-data_D_25_25 = dlmread('W25000_L25000_idvd.txt');
+data_G_25_25 = dlmread([vg_dir, f, 'W25000_L25000_idvg.txt']);
+data_D_25_25 = dlmread([vd_dir, f, 'W25000_L25000_idvd.txt']);
 this_W = 25e-4;
 this_L = 25e-4;
 
 % other datasets used for deltaL extraction
 data_G = ["W25000_L2000_idvg.txt","W25000_L1000_idvg.txt",...
     "W25000_L800_idvg.txt","W25000_L600_idvg.txt"];
+data_G = strcat(vg_dir, f, data_G);
 data_L = [2e-4;1e-4;0.8e-4;0.6e-4];
 
 % plot long-channel measured and modeled IDS vs VGS
+% using assumed parameter values
 num=73;
 figure
 hold on
-
 num_data_sets = 7;
 % for rms error calculation, assuming all weights are 1
 rms_error_vgs = zeros(num_data_sets, 1);
@@ -45,7 +52,7 @@ for i = 1:num_data_sets
     this_VSB = data_G_25_25(num*i, 3);
     
     modeled_IDS = current(this_W, this_L, parameters.gamma,...
-        parameters.VFB, parameters.phiF, parameters.u0, 0, 0,...
+        parameters.VFB, parameters.phiF, parameters.u0, 0, 0, 0,...
         constants.roomTemp, this_VGS, this_VDS, this_VSB);
     
     plot(this_VGS, this_IDS*1e6, '*');
@@ -68,7 +75,6 @@ hold off;
 num=37;
 figure
 hold on
-
 num_data_sets = 5;
 % for rms error calculation, assuming all weights are 1
 rms_error_vds = zeros(num_data_sets, 1);
@@ -80,7 +86,7 @@ for i = 1:num_data_sets
     this_VSB = data_D_25_25(num*i, 3);
     
     modeled_IDS = current(this_W, this_L, parameters.gamma,...
-        parameters.VFB, parameters.phiF, parameters.u0, 0, 0,...
+        parameters.VFB, parameters.phiF, parameters.u0, 0, 0, 0,...
         constants.roomTemp, this_VGS, this_VDS, this_VSB);
     
     plot(this_VDS, this_IDS*1e6,'*');
@@ -94,7 +100,6 @@ for i = 1:num_data_sets
     
     rms_error_vds(i) = this_rms_error;
 end
-
 title('I_{DS} vs. V_{DS}: Assumed Parameters');
 xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
@@ -112,7 +117,6 @@ phiF = constants.phit*log(NA/1e10);
 num=73;
 figure
 hold on
-
 num_data_sets = 7;
 % for rms error calculation, assuming all weights are 1
 rms_error_vgs2 = zeros(num_data_sets, 1);
@@ -124,7 +128,7 @@ for i = 1:num_data_sets
     this_VSB = data_G_25_25(num*i, 3);
     
     modeled_IDS = current(this_W, this_L, gamma,...
-        VFB, phiF, parameters.u0, 0, 0, constants.roomTemp,...
+        VFB, phiF, parameters.u0, 0, 0, 0, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
     plot(this_VGS, this_IDS*1e6, '*');
@@ -138,7 +142,6 @@ for i = 1:num_data_sets
     
     rms_error_vgs2(i) = this_rms_error;
 end
-
 title('I_{DS} vs. V_{GS}: Long-Channel Params Extracted');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
@@ -148,7 +151,6 @@ hold off;
 num=37;
 figure
 hold on
-
 num_data_sets = 5;
 % for rms error calculation, assuming all weights are 1
 rms_error_vds2 = zeros(num_data_sets, 1);
@@ -160,7 +162,7 @@ for i = 1:num_data_sets
     this_VSB = data_D_25_25(num*i, 3);
     
     modeled_IDS = current(this_W, this_L, gamma,...
-        VFB, phiF, parameters.u0, 0, 0, constants.roomTemp,...
+        VFB, phiF, parameters.u0, 0, 0, 0, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
     plot(this_VDS, this_IDS*1e6,'*');
@@ -189,7 +191,6 @@ num_data_sets = 7;
 
 figure
 hold on
-
 % for rms error calculation, assuming all weights are 1
 rms_error_vgs3 = zeros(num_data_sets, 1);
 for i = 1:num_data_sets
@@ -200,7 +201,7 @@ for i = 1:num_data_sets
     this_VSB = data_G_25_25(num*i, 3);
     
     modeled_IDS = current(this_W, this_L, gamma,...
-        VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
+        VFB, phiF, mu0, a_theta, eta_E, 0, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
     plot(this_VGS, this_IDS*1e6,'*');
@@ -214,7 +215,6 @@ for i = 1:num_data_sets
     
     rms_error_vgs3(i) = this_rms_error;
 end
-
 title('I_{DS} vs. V_{GS}: Mobility Params Extracted');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
@@ -224,7 +224,6 @@ hold off;
 num=37;
 figure
 hold on
-
 num_data_sets = 5;
 % for rms error calculation, assuming all weights are 1
 rms_error_vds3 = zeros(num_data_sets, 1);
@@ -236,7 +235,7 @@ for i = 1:num_data_sets
     this_VSB = data_D_25_25(num*i, 3);
     
     modeled_IDS = current(this_W, this_L, gamma,...
-        VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
+        VFB, phiF, mu0, a_theta, eta_E, 0, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
     plot(this_VDS, this_IDS*1e6, '*');
@@ -257,15 +256,12 @@ ylabel('I_{DS} (\muA)');
 hold off;
 
 % Extract deltaL
-
 delta_L = extract_deltaL(data_G,data_L);
-this_L = this_L - delta_L;
 
 num=73;
 num_data_sets = 7;
 figure
 hold on
-
 % for rms error calculation, assuming all weights are 1
 rms_error_vgs4 = zeros(num_data_sets, 1);
 for i = 1:num_data_sets
@@ -276,7 +272,7 @@ for i = 1:num_data_sets
     this_VSB = data_G_25_25(num*i, 3);
     
     modeled_IDS = current(this_W, this_L, gamma,...
-        VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
+        VFB, phiF, mu0, a_theta, eta_E, delta_L, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
     plot(this_VGS, this_IDS*1e6,'*');
@@ -290,7 +286,6 @@ for i = 1:num_data_sets
     
     rms_error_vgs4(i) = this_rms_error;
 end
-
 title('I_{DS} vs. V_{GS}: Delta L Extracted');
 xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
@@ -300,7 +295,6 @@ hold off;
 num=37;
 figure
 hold on
-
 num_data_sets = 5;
 % for rms error calculation, assuming all weights are 1
 rms_error_vds4 = zeros(num_data_sets, 1);
@@ -312,7 +306,7 @@ for i = 1:num_data_sets
     this_VSB = data_D_25_25(num*i, 3);
     
     modeled_IDS = current(this_W, this_L, gamma,...
-        VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
+        VFB, phiF, mu0, a_theta, eta_E, delta_L, constants.roomTemp,...
         this_VGS, this_VDS, this_VSB);
     
     plot(this_VDS, this_IDS*1e6,'*');
@@ -326,7 +320,6 @@ for i = 1:num_data_sets
     
     rms_error_vds4(i) = this_rms_error;
 end
-
 title('I_{DS} vs. V_{DS}: Delta L Extracted');
 xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
@@ -528,153 +521,280 @@ hold off;
 
 %% Plots for all Channel Lengths
 
-close all
-
-this_W = 25e-4;
-
-f = filesep;
-vg_dir = 'vg_data';
-
-num_vg = 73;
-num_vd = 37;
-
-num_datasets_vg = 9;
-num_datasets_vd = 10;
-
-vg_listing = dir(vg_dir);
-vg_listing = vg_listing(~ismember({vg_listing.name}, {'.', '..'}));
-
-rms_error_vgs = zeros(size(vg_listing, 1), num_data_sets);
-
-for k = 1:size(vg_listing, 1)
-    
-    fname = vg_listing(k).name;
-    
-    splitname = strsplit(fname, '_');
-    L_val = str2double(splitname{2}(2:end));
-    this_L = L_val * 1e-7;
-    
-    data = dlmread([vg_dir, f, fname]);
-    
-    figure(4*k-3)
-    hold on
-    figure(4*k-2)
-    hold on
-    VSB_legend = cell(14, 1);
-    for m = 1:7
-        this_VGS = data(num_vg*(m-1)+1:num_vg*m, 2);
-        this_IDS = data(num_vg*(m-1)+1:num_vg*m, 4);
-    
-        this_VDS = data(num_vg*m, 1);
-        this_VSB = data(num_vg*m, 3);
-        
-        VSB_legend{m*2-1} = strcat('V_{SB} = ', num2str(this_VSB),...
-            ', measured');
-        VSB_legend{m*2} = strcat('V_{SB} = ', num2str(this_VSB),...
-            ', modeled');
-    
-        modeled_IDS = current(this_W, this_L, gamma,...
-            VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
-            this_VGS, this_VDS, this_VSB);
-        
-        ln_this_IDS = log(this_IDS);
-        ln_modeled_IDS = log(modeled_IDS);
-        
-        figure(4*k-3)
-        plot(this_VGS, this_IDS*1e6,'*');
-        plot(this_VGS, modeled_IDS*1e6);
-        figure(4*k-2)
-        plot(this_VGS, ln_this_IDS,'*');
-        plot(this_VGS, ln_modeled_IDS);
-        
-        % calculate rms error
-        difference = this_IDS-modeled_IDS;
-        normalized_difference = difference./this_IDS;
-        sum_sq = sum(normalized_difference.^2);
-        this_rms_error = sqrt(sum_sq/num);
-    
-        rms_error_vgs(k, m) = this_rms_error;
-    end
-    
-    this_VDS = data(num_vg*m, 1);
-    
-    figure(4*k-3)
-    title(['I_{DS} vs. V_{GS}, L = ', num2str(L_val/1000),...
-        '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
-    xlabel('V_{GS} (V)');
-    ylabel('I_{DS} (\muA)');
-    legend(VSB_legend)
-
-    figure(4*k-2)
-    title(['ln(I_{DS}) vs. V_{GS}, L = ', num2str(L_val/1000),...
-        '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
-    xlabel('V_{GS} (V)');
-    ylabel('ln(I_{DS})');
-    legend(VSB_legend)
-    
-    figure(4*k-1)
-    hold on
-    figure(4*k)
-    hold on
-    VSB_legend = cell(4, 1);
-    for m = 8:9
-        this_VGS = data(num_vg*(m-1)+1:num_vg*m, 2);
-        this_IDS = data(num_vg*(m-1)+1:num_vg*m, 4);
-    
-        this_VDS = data(num_vg*m, 1);
-        this_VSB = data(num_vg*m, 3);
-        
-        VSB_legend{(m-7)*2-1} =...
-            strcat('V_{SB} = ', num2str(this_VSB),...
-            ', measured');
-        VSB_legend{(m-7)*2} =...
-            strcat('V_{SB} = ', num2str(this_VSB),...
-            ', modeled');
-    
-        modeled_IDS = current(this_W, this_L, gamma,...
-            VFB, phiF, mu0, a_theta, eta_E, constants.roomTemp,...
-            this_VGS, this_VDS, this_VSB);
-        
-        ln_this_IDS = log(this_IDS);
-        ln_modeled_IDS = log(modeled_IDS);
-        
-        figure(4*k-1)
-        plot(this_VGS, this_IDS*1e6,'*');
-        plot(this_VGS, modeled_IDS*1e6);
-        figure(4*k)
-        plot(this_VGS, ln_this_IDS,'*');
-        plot(this_VGS, ln_modeled_IDS);
-        
-        % calculate rms error
-        difference = this_IDS-modeled_IDS;
-        normalized_difference = difference./this_IDS;
-        sum_sq = sum(normalized_difference.^2);
-        this_rms_error = sqrt(sum_sq/num);
-    
-        rms_error_vgs(k, m) = this_rms_error;
-    end
-    
-    this_VDS = data(num_vg*m, 1);
-    
-    figure(4*k-1)
-    title(['I_{DS} vs. V_{GS}, L = ', num2str(L_val/1000),...
-        '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
-    xlabel('V_{GS} (V)');
-    ylabel('I_{DS} (\muA)');
-    legend(VSB_legend)
-
-    figure(4*k)
-    title(['ln(I_{DS}) vs. V_{GS}, L = ', num2str(L_val/1000),...
-        '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
-    xlabel('V_{GS} (V)');
-    ylabel('ln(I_{DS})');
-    legend(VSB_legend)
-end
+% close all
+% 
+% 
+% num_vg = 73;
+% num_vd = 37;
+% 
+% num_datasets_vg = 9;
+% num_datasets_vd = 10;
+% 
+% % VG plots
+% 
+% vg_listing = dir(vg_dir);
+% vg_listing = vg_listing(~ismember({vg_listing.name}, {'.', '..'}));
+% 
+% rms_error_vgs = zeros(size(vg_listing, 1), num_datasets_vg);
+% 
+% for k = 1:size(vg_listing, 1)
+%     
+%     fname = vg_listing(k).name;
+%     
+%     splitname = strsplit(fname, '_');
+%     L_val = str2double(splitname{2}(2:end));
+%     this_L = L_val * 1e-7;
+%     
+%     data = dlmread([vg_dir, f, fname]);
+%     
+%     figure(4*k-3)
+%     hold on
+%     figure(4*k-2)
+%     hold on
+%     VSB_legend = cell(14, 1);
+%     for m = 1:7
+%         this_VGS = data(num_vg*(m-1)+1:num_vg*m, 2);
+%         this_IDS = data(num_vg*(m-1)+1:num_vg*m, 4);
+%     
+%         this_VDS = data(num_vg*m, 1);
+%         this_VSB = data(num_vg*m, 3);
+%         
+%         VSB_legend{m*2-1} = strcat('V_{SB} = ', num2str(this_VSB),...
+%             ', measured');
+%         VSB_legend{m*2} = strcat('V_{SB} = ', num2str(this_VSB),...
+%             ', modeled');
+%     
+%         modeled_IDS = current(this_W, this_L, gamma,...
+%             VFB, phiF, mu0, a_theta, eta_E, delta_L, constants.roomTemp,...
+%             this_VGS, this_VDS, this_VSB);
+%         
+%         ln_this_IDS = log(this_IDS);
+%         ln_modeled_IDS = log(modeled_IDS);
+%         
+%         figure(4*k-3)
+%         plot(this_VGS, this_IDS*1e6,'*');
+%         plot(this_VGS, modeled_IDS*1e6);
+%         figure(4*k-2)
+%         plot(this_VGS, ln_this_IDS,'*');
+%         plot(this_VGS, ln_modeled_IDS);
+%         
+%         % calculate rms error
+%         difference = this_IDS-modeled_IDS;
+%         normalized_difference = difference./this_IDS;
+%         sum_sq = sum(normalized_difference.^2);
+%         this_rms_error = sqrt(sum_sq/num);
+%     
+%         rms_error_vgs(k, m) = this_rms_error;
+%     end
+%     
+%     this_VDS = data(num_vg*m, 1);
+%     
+%     figure(4*k-3)
+%     title(['I_{DS} vs. V_{GS}, L = ', num2str(L_val/1000),...
+%         '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
+%     xlabel('V_{GS} (V)');
+%     ylabel('I_{DS} (\muA)');
+%     legend(VSB_legend)
+% 
+%     figure(4*k-2)
+%     title(['ln(I_{DS}) vs. V_{GS}, L = ', num2str(L_val/1000),...
+%         '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
+%     xlabel('V_{GS} (V)');
+%     ylabel('ln(I_{DS})');
+%     legend(VSB_legend)
+%     
+%     figure(4*k-1)
+%     hold on
+%     figure(4*k)
+%     hold on
+%     VSB_legend = cell(4, 1);
+%     for m = 8:9
+%         this_VGS = data(num_vg*(m-1)+1:num_vg*m, 2);
+%         this_IDS = data(num_vg*(m-1)+1:num_vg*m, 4);
+%     
+%         this_VDS = data(num_vg*m, 1);
+%         this_VSB = data(num_vg*m, 3);
+%         
+%         VSB_legend{(m-7)*2-1} =...
+%             strcat('V_{SB} = ', num2str(this_VSB),...
+%             ', measured');
+%         VSB_legend{(m-7)*2} =...
+%             strcat('V_{SB} = ', num2str(this_VSB),...
+%             ', modeled');
+%     
+%         modeled_IDS = current(this_W, this_L, gamma,...
+%             VFB, phiF, mu0, a_theta, eta_E, delta_L, constants.roomTemp,...
+%             this_VGS, this_VDS, this_VSB);
+%         
+%         ln_this_IDS = log(this_IDS);
+%         ln_modeled_IDS = log(modeled_IDS);
+%         
+%         figure(4*k-1)
+%         plot(this_VGS, this_IDS*1e6,'*');
+%         plot(this_VGS, modeled_IDS*1e6);
+%         figure(4*k)
+%         plot(this_VGS, ln_this_IDS,'*');
+%         plot(this_VGS, ln_modeled_IDS);
+%         
+%         % calculate rms error
+%         difference = this_IDS-modeled_IDS;
+%         normalized_difference = difference./this_IDS;
+%         sum_sq = sum(normalized_difference.^2);
+%         this_rms_error = sqrt(sum_sq/num);
+%     
+%         rms_error_vgs(k, m) = this_rms_error;
+%     end
+%     
+%     this_VDS = data(num_vg*m, 1);
+%     
+%     figure(4*k-1)
+%     title(['I_{DS} vs. V_{GS}, L = ', num2str(L_val/1000),...
+%         '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
+%     xlabel('V_{GS} (V)');
+%     ylabel('I_{DS} (\muA)');
+%     legend(VSB_legend)
+% 
+%     figure(4*k)
+%     title(['ln(I_{DS}) vs. V_{GS}, L = ', num2str(L_val/1000),...
+%         '\mum, V_{DS} = ', num2str(this_VDS), 'V']);
+%     xlabel('V_{GS} (V)');
+%     ylabel('ln(I_{DS})');
+%     legend(VSB_legend)
+% end
+% 
+% % VD plots
+% 
+% vd_listing = dir(vd_dir);
+% vd_listing = vd_listing(~ismember({vd_listing.name}, {'.', '..'}));
+% 
+% rms_error_vds = zeros(size(vd_listing, 1), num_datasets_vd);
+% 
+% for k = 1:size(vd_listing, 1)
+%     
+%     fname = vd_listing(k).name;
+%     
+%     splitname = strsplit(fname, '_');
+%     L_val = str2double(splitname{2}(2:end));
+%     this_L = L_val * 1e-7;
+%     
+%     data = dlmread([vd_dir, f, fname]);
+%     
+%     figure(4*size(vg_listing, 1) + 4*k-3)
+%     hold on
+%     figure(4*size(vg_listing, 1) + 4*k-2)
+%     VGS_legend = cell(num_datasets_vd, 1);
+%     for m = 1:7
+%         this_VDS = data(num_vd*(m-1)+1:num_vd*m, 1);
+%         this_IDS = data(num_vd*(m-1)+1:num_vd*m, 4);
+%     
+%         this_VGS = data(num_vd*m, 2);
+%         this_VSB = data(num_vd*m, 3);
+%         
+%         VGS_legend{m*2-1} = strcat('V_{GS} = ', num2str(this_VGS),...
+%             ', measured');
+%         VGS_legend{m*2} = strcat('V_{GS} = ', num2str(this_VGS),...
+%             ', modeled');
+%     
+%         modeled_IDS = current(this_W, this_L, gamma,...
+%             VFB, phiF, mu0, a_theta, eta_E, delta_L, constants.roomTemp,...
+%             this_VGS, this_VDS, this_VSB);
+%         
+%         figure(4*size(vg_listing, 1) + 4*k-3)
+%         plot(this_VDS, this_IDS*1e6,'*');
+%         plot(this_VDS, modeled_IDS*1e6);
+%         figure(4*size(vg_listing, 1) + 4*k-2)
+%         semilogy(this_VDS, this_IDS,'*');
+%         hold on
+%         semilogy(this_VDS, modeled_IDS);
+%         
+%         % calculate rms error
+%         difference = this_IDS-modeled_IDS;
+%         normalized_difference = difference./this_IDS;
+%         sum_sq = sum(normalized_difference.^2);
+%         this_rms_error = sqrt(sum_sq/num);
+%     
+%         rms_error_vds(k, m) = this_rms_error;
+%     end
+%     
+%     this_VSB = data(num_vd*m, 3);
+%     
+%     figure(4*size(vg_listing, 1) + 4*k-3)
+%     title(['I_{DS} vs. V_{DS}, L = ', num2str(L_val/1000),...
+%         '\mum, V_{SB} = ', num2str(this_VSB), 'V']);
+%     xlabel('V_{DS} (V)');
+%     ylabel('I_{DS} (\muA)');
+%     legend(VGS_legend)
+% 
+%     figure(4*size(vg_listing, 1) + 4*k-2)
+%     title(['I_{DS} vs. V_{DS}, L = ', num2str(L_val/1000),...
+%         '\mum, V_{SB} = ', num2str(this_VSB), 'V']);
+%     xlabel('V_{DS} (V)');
+%     ylabel('I_{DS} (A)');
+%     legend(VGS_legend)
+%     
+%     figure(4*size(vg_listing, 1) + 4*k-1)
+%     hold on
+%     figure(4*size(vg_listing, 1) + 4*k)
+%     VGS_legend = cell(num_datasets_vd, 1);
+%     for m = num_datasets_vd/2+1:num_datasets_vd
+%         this_VDS = data(num_vd*(m-1)+1:num_vd*m, 1);
+%         this_IDS = data(num_vd*(m-1)+1:num_vd*m, 4);
+%     
+%         this_VGS = data(num_vd*m, 2);
+%         this_VSB = data(num_vd*m, 3);
+%         
+%         VGS_legend{(m-num_datasets_vd/2)*2-1} =...
+%             strcat('V_{GS} = ', num2str(this_VGS),...
+%             ', measured');
+%         VGS_legend{(m-num_datasets_vd/2)*2} =...
+%             strcat('V_{GS} = ', num2str(this_VGS),...
+%             ', modeled');
+%     
+%         modeled_IDS = current(this_W, this_L, gamma,...
+%             VFB, phiF, mu0, a_theta, eta_E, delta_L, constants.roomTemp,...
+%             this_VGS, this_VDS, this_VSB);
+%         
+%         
+%         figure(4*size(vg_listing, 1) + 4*k-1)
+%         plot(this_VDS, this_IDS*1e6,'*');
+%         plot(this_VDS, modeled_IDS*1e6);
+%         figure(4*size(vg_listing, 1) + 4*k)
+%         semilogy(this_VDS, this_IDS,'*');
+%         hold on
+%         semilogy(this_VDS, modeled_IDS);
+%         
+%         % calculate rms error
+%         difference = this_IDS-modeled_IDS;
+%         normalized_difference = difference./this_IDS;
+%         sum_sq = sum(normalized_difference.^2);
+%         this_rms_error = sqrt(sum_sq/num);
+%     
+%         rms_error_vds(k, m) = this_rms_error;
+%     end
+%     
+%     this_VSB = data(num_vd*m, 3);
+%     
+%     figure(4*size(vg_listing, 1) + 4*k-1)
+%     title(['I_{DS} vs. V_{DS}, L = ', num2str(L_val/1000),...
+%         '\mum, V_{SB} = ', num2str(this_VSB), 'V']);
+%     xlabel('V_{DS} (V)');
+%     ylabel('I_{DS} (\muA)');
+%     legend(VGS_legend)
+% 
+%     figure(4*size(vg_listing, 1) + 4*k)
+%     title(['I_{DS} vs. V_{DS}, L = ', num2str(L_val/1000),...
+%         '\mum, V_{SB} = ', num2str(this_VSB), 'V']);
+%     xlabel('V_{DS} (V)');
+%     ylabel('I_{DS} (A)');
+%     legend(VGS_legend)
+% end
 
 %% Current-Calculating Function
 
 function IDS = current(W, L, gamma, VFB, phiF, mu0, a_theta,...
-    eta_E, temp, VGS, VDS, VSB)
+    eta_E, delta_L, temp, VGS, VDS, VSB)
+
+L = L - delta_L;
 
 % only matters for appendix K WI VDS-dependence test,
 % where temperature is allowed to change
