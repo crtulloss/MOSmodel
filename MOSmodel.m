@@ -21,6 +21,9 @@ f = filesep;
 vg_dir = 'vg_data';
 vd_dir = 'vd_data';
 
+% leakage current value (based on the long-channel measured data)
+leakage_lim = 1.5e-11;
+
 % name format: data_G/D_W_L
 % file columns:  VDS	VGS     VSB     IDS
 
@@ -58,11 +61,19 @@ for i = 1:num_data_sets
     plot(this_VGS, this_IDS*1e6, '*');
     plot(this_VGS, modeled_IDS*1e6);
     
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
     
     rms_error_vgs(i) = this_rms_error;
 end
@@ -92,11 +103,19 @@ for i = 1:num_data_sets
     plot(this_VDS, this_IDS*1e6,'*');
     plot(this_VDS, modeled_IDS*1e6);
     
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
     
     rms_error_vds(i) = this_rms_error;
 end
@@ -134,11 +153,19 @@ for i = 1:num_data_sets
     plot(this_VGS, this_IDS*1e6, '*');
     plot(this_VGS, modeled_IDS*1e6);
     
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
     
     rms_error_vgs2(i) = this_rms_error;
 end
@@ -168,11 +195,19 @@ for i = 1:num_data_sets
     plot(this_VDS, this_IDS*1e6,'*');
     plot(this_VDS, modeled_IDS*1e6);
     
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
     
     rms_error_vds2(i) = this_rms_error;
 end
@@ -207,11 +242,19 @@ for i = 1:num_data_sets
     plot(this_VGS, this_IDS*1e6,'*');
     plot(this_VGS, modeled_IDS*1e6);
     
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
     
     rms_error_vgs3(i) = this_rms_error;
 end
@@ -241,11 +284,19 @@ for i = 1:num_data_sets
     plot(this_VDS, this_IDS*1e6, '*');
     plot(this_VDS, modeled_IDS*1e6);
     
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
     
     rms_error_vds3(i) = this_rms_error;
 end
@@ -278,11 +329,19 @@ for i = 1:num_data_sets
     plot(this_VGS, this_IDS*1e6,'*');
     plot(this_VGS, modeled_IDS*1e6);
     
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
     
     rms_error_vgs4(i) = this_rms_error;
 end
@@ -312,11 +371,19 @@ for i = 1:num_data_sets
     plot(this_VDS, this_IDS*1e6,'*');
     plot(this_VDS, modeled_IDS*1e6);
     
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
     % calculate rms error
     difference = this_IDS-modeled_IDS;
     normalized_difference = difference./this_IDS;
     sum_sq = sum(normalized_difference.^2);
-    this_rms_error = sqrt(sum_sq/num);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
     
     rms_error_vds4(i) = this_rms_error;
 end
@@ -577,6 +644,12 @@ hold off;
 %         figure(4*k-2)
 %         plot(this_VGS, ln_this_IDS,'*');
 %         plot(this_VGS, ln_modeled_IDS);
+%
+%         modeled_IDS_notbelow_leakage =...
+%             ((modeled_IDS < leakage_lim) == 0);
+%     
+%         modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+%             this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
 %         
 %         % calculate rms error
 %         difference = this_IDS-modeled_IDS;
@@ -635,6 +708,12 @@ hold off;
 %         figure(4*k)
 %         plot(this_VGS, ln_this_IDS,'*');
 %         plot(this_VGS, ln_modeled_IDS);
+%
+%         modeled_IDS_notbelow_leakage =...
+%             ((modeled_IDS < leakage_lim) == 0);
+%     
+%         modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+%             this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
 %         
 %         % calculate rms error
 %         difference = this_IDS-modeled_IDS;
@@ -706,6 +785,12 @@ hold off;
 %         semilogy(this_VDS, this_IDS,'*');
 %         hold on
 %         semilogy(this_VDS, modeled_IDS);
+%
+%         modeled_IDS_notbelow_leakage =...
+%             ((modeled_IDS < leakage_lim) == 0);
+%     
+%         modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+%             this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
 %         
 %         % calculate rms error
 %         difference = this_IDS-modeled_IDS;
@@ -762,6 +847,12 @@ hold off;
 %         semilogy(this_VDS, this_IDS,'*');
 %         hold on
 %         semilogy(this_VDS, modeled_IDS);
+%
+%         modeled_IDS_notbelow_leakage =...
+%             ((modeled_IDS < leakage_lim) == 0);
+%     
+%         modeled_IDS = modeled_IDS(modeled_IDS_notbelow_leakage);
+%             this_IDS = this_IDS(modeled_IDS_notbelow_leakage);
 %         
 %         % calculate rms error
 %         difference = this_IDS-modeled_IDS;
