@@ -394,14 +394,16 @@ hold off;
 
 num_data_sets = 7;
 num = 73;
-[gamma_a, gamma_b, gamma_c, gamma_d] = extract_gamma_short(data_G, data_L, gamma, phi0, VFB,...
-    num_data_sets, num);
+[gamma_a, gamma_b, gamma_c, gamma_d] = extract_gamma_short(data_G, data_L,...
+    gamma, phi0, VFB+0.07, num_data_sets, num);
 
-[a_theta_a, a_theta_b, a_theta_c] = extract_mu_short(data_G, data_L, this_W, gamma, VFB, phiF, mu0, eta_E,...
-    constants.roomTemp, num_data_sets, num, delta_L);
+[a_theta_a, a_theta_b, a_theta_c, eta_a, eta_b, eta_c] = extract_mu_short(...
+    data_G, data_L, this_W, gamma, VFB, phiF, mu0, a_theta, eta_E, delta_L,...
+    constants.roomTemp, num_data_sets, num);
 
-data_G_25_6 = dlmread([vg_dir, f, 'W25000_L25000_idvg.txt']);
-L = 25e-4;
+data_G_25_6 = dlmread([vg_dir, f, 'W25000_L600_idvg.txt']);
+data_D_25_6 = dlmread([vd_dir, f, 'W25000_L600_idvd.txt']);
+L = 0.6e-4;
 
 figure
 hold on
@@ -417,10 +419,10 @@ for i = 1:num_data_sets
     
     gamma2 = gamma*(gamma_a*sqrt(this_VSB) +gamma_b*1/(L)^2 + gamma_c*sqrt(this_VSB)/L^2 + gamma_d);
     a_theta2 = a_theta_a/sqrt(L) + a_theta_b/L + a_theta_c/L^2;
-    
-    modeled_IDS = current(this_W, L, gamma2,...
-        VFB, phiF, mu0, a_theta, eta_E, delta_L, constants.roomTemp,...
-        this_VGS, this_VDS, this_VSB);
+    eta2 = eta_a/sqrt(L) + eta_b/L + eta_c/L^2;
+
+    modeled_IDS = current(this_W, L, gamma2, VFB, phiF, mu0, a_theta2,...
+        eta2, delta_L, constants.roomTemp, this_VGS, this_VDS, this_VSB);
     
     plot(this_VGS, this_IDS*1e6,'*');
     plot(this_VGS, modeled_IDS*1e6);
@@ -443,6 +445,47 @@ for i = 1:num_data_sets
 end
 title('I_{DS} vs. V_{GS}: Charge sharing');
 xlabel('V_{GS} (V)');
+ylabel('I_{DS} (\muA)');
+hold off;
+
+% plot long-channel measured and modeled IDS vs VDS
+num=37;
+figure
+hold on
+num_data_sets = 5;
+% for rms error calculation, assuming all weights are 1
+rms_error_vds5 = zeros(num_data_sets, 1);
+for i = 1:num_data_sets
+    this_VDS = data_D_25_6(num*(i-1)+1:num*i, 1);
+    this_IDS = data_D_25_6(num*(i-1)+1:num*i, 4);
+    
+    this_VGS = data_D_25_6(num*i, 2);
+    this_VSB = data_D_25_6(num*i, 3);
+    
+    modeled_IDS = current(this_W, L, gamma2, VFB, phiF, mu0, a_theta2,...
+        eta2, delta_L, constants.roomTemp, this_VGS, this_VDS, this_VSB);
+    
+    plot(this_VDS, this_IDS*1e6,'*');
+    plot(this_VDS, modeled_IDS*1e6);
+    
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
+    % calculate rms error
+    difference = this_IDS-modeled_IDS;
+    normalized_difference = difference./this_IDS;
+    sum_sq = sum(normalized_difference.^2);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
+    
+    rms_error_vds5(i) = this_rms_error;
+end
+title('I_{DS} vs. V_{DS}: Delta L Extracted');
+xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
 hold off;
 
@@ -1131,6 +1174,8 @@ function delta_L = extract_deltaL(datasets,data_L)
 
 gm_max = zeros(numel(datasets),1);
 
+% for loop determining the maximum transconductances for each channel
+% length
 for i=1:numel(datasets)
     data_G = dlmread(datasets(i));
     this_VGS = data_G(1:73, 2);
@@ -1139,20 +1184,23 @@ for i=1:numel(datasets)
     [gm_max(i) , ~] = max(gm);
 end
 
+%Linear Least Squares fit of 1/gmmax to the channel length
 A = [data_L*1e4 ones(numel(datasets),1)];
 B = 1./gm_max;
 lms_result = ((A'*A)\A')*B;
 slope = lms_result(1);
 yint = lms_result(2);
+
+%x-intercept is the delta_L
 delta_L = -yint/slope*1e-4;
 
 end
 
-function [a, b, c, d] = extract_gamma_short(datasets, data_L, gamma, phi0, VFB,...
-    num_data_sets, num)
+% Extract the variations in gamma due to charge sharing
+function [a, b, c, d] = extract_gamma_short(datasets, data_L, gamma,...
+    phi0, VFB, num_data_sets, num)
 
 gamma_all = zeros(numel(datasets),num_data_sets);
-Vt0 = zeros(numel(datasets),1);
 
 for j=1:numel(datasets)
     data_G = dlmread(datasets(j));
@@ -1173,10 +1221,13 @@ for j=1:numel(datasets)
         Vt(i) = this_VGS(index_max_gm) - this_IDS(index_max_gm)/gm_max - 0.05;
     end
 
-    Vt0(j) = Vt(4);
+    %Using the previously known values of VFB and phi0, gammas are obtained
+    %for all VSB and L
     gamma_all(j,:) = (Vt-VFB-phi0)./sqrt(phi0+Vsb);
 end
 
+%Linear regression to fit gamma of the form:
+%gamma_hat = gamma*(a*sqrt(VSB) + b/L^2 + c*sqrt(VSB)/L^2 + d)
 Y = reshape(gamma_all,[],1)/gamma;
 X1 = kron(sqrt(Vsb),ones(numel(data_L),1));
 X2 = kron(ones(numel(Vsb),1),1./(data_L).^2);
@@ -1185,9 +1236,11 @@ X4 = ones(size(X1,1),1);
 X = [X1 X2 X3 X4];
 B = X\Y;
 
+%Error of the fit coefficients
 error1 = Y - X*B;
 error1 = (error1./Y).^2*100;
 
+%Coefficients of the linear regression
 a = B(1);
 b = B(2);
 c = B(3);
@@ -1195,11 +1248,15 @@ d = B(4);
 
 end
 
-function [a, b, c] = extract_mu_short(datasets, data_L, W, gamma, VFB, phiF, mu0, eta_E,...
-    temp, num_data_sets, num, delta_L)
+%Extracting the variations in a_theta and eta_E for short channels
+function [a, b, c, a2, b2, c2] = extract_mu_short(datasets, data_L, W,...
+    gamma, VFB, phiF, mu0, a_theta_long, eta_E_long, delta_L, temp,...
+    num_data_sets, num)
 
 a_theta_L = zeros(numel(datasets),1);
 a_theta = zeros(num_data_sets,1);
+eta_L = zeros(numel(datasets),1);
+eta = zeros(num_data_sets,1);
 
 % only matters for appendix K WI VDS-dependence test,
 % where temperature is allowed to change
@@ -1252,22 +1309,33 @@ for j = 1:numel(datasets)
 
         QI_avg = -parameters.Cox.*(VGB - VFB - (psi_s0+psi_sL)/2) - QB_avg;
 
-        % calculate drain current - components "due to" drift and diffusion
-        % calculate drain current
-        IDS1 = W/(data_L(j)-delta_L)*mu0*parameters.Cox * (VGB - VFB - psi_s0 - gamma*sqrt(psi_s0)...
-            - alpha.*delta_psi_s/2).*delta_psi_s;
-        IDS2 = W/(data_L(j)-delta_L)*mu0*parameters.Cox*phit*alpha.*delta_psi_s;
-        IDS_model = IDS1+IDS2;
+        % Initial guesses based on long channel values
+        x0 = [a_theta_long eta_E_long];
+        
+        %Function handle for fitting
+        IDS_model = @(x, VGB) (W/(data_L(j)-delta_L)*mu0*parameters.Cox *...
+            (VGB - VFB - psi_s0 - gamma*sqrt(psi_s0) - alpha.*...
+            delta_psi_s/2).*delta_psi_s + W/(data_L(j)-delta_L)*mu0*...
+            parameters.Cox*phit*alpha.*delta_psi_s)./(1-x(1)/...
+            constants.eps.*(QB_avg + x(2)*QI_avg));
 
-        a_theta(i) = (QB_avg+eta_E*QI_avg)\(1-IDS_model./IDS)*constants.eps;
+        %Least squares curve fit to determine the parameter values for each
+        %VSB and L
+        x = lsqcurvefit(IDS_model,x0,VGB,IDS);
+        a_theta(i) = x(1);
+        eta(i) = x(2);
     end
 
+    %Parameters averaged over VSB to be just functions of L
     a_theta_L(j) = mean(a_theta);
+    eta_L(j) = mean(eta);
 end
 
 figure;
 plot(data_L,a_theta_L,'*');
 
+%Linear regression for a_theta of the form:
+%a_theta = a/sqrt(L) + b/L + c/L^2
 Y = a_theta_L;
 X1 = 1./sqrt(data_L);
 X2 = 1./data_L;
@@ -1275,11 +1343,31 @@ X3 = 1./(data_L).^2;
 X = [X1 X2 X3];
 B = X\Y;
 
+%Error of the fit coefficients
 error1 = Y - X*B;
-error1 = (error1./Y).^2*100
+error1 = (error1./Y).^2*100;
 
+%Coefficients of the linear regressions
 a = B(1);
 b = B(2);
 c = B(3);
+
+%Linear regression for eta_E of the form:
+%eta_E = a/sqrt(L) + b/L + c/L^2
+Y = eta_L;
+X1 = 1./sqrt(data_L);
+X2 = 1./data_L;
+X3 = 1./(data_L).^2;
+X = [X1 X2 X3];
+B = X\Y;
+
+%Error of the fit coefficients
+error2 = Y - X*B;
+error2 = (error2./Y).^2*100;
+
+%Coefficients of the linear regression
+a2 = B(1);
+b2 = B(2);
+c2 = B(3);
 
 end
