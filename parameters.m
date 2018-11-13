@@ -12,6 +12,7 @@ classdef parameters
         tox = 10.5e-7;                  % from website
         VFB = -1.75;                    % assumption
         u0 = 500;
+        Ec = 1e20; % makes vel sat negligible for extraction of other stuff
 
         % calculated values
         phiF = constants.phit*log(parameters.NA/1e10);

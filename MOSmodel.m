@@ -489,199 +489,218 @@ xlabel('V_{DS} (V)');
 ylabel('I_{DS} (\muA)');
 hold off;
 
-% %% Validation: Appendix K and more
-% 
-% % all these tests for W=L=25um
-% this_W = 25e-4;
-% this_L = 25e-4;
-% 
-% % rms error - remove leakage points bc we aren't doing leakage?
-% 
-% % remember to add log plots back!
-% 
-% % K1: DC tests
-% 
-% % continuity and smooth behavior - densely spaced plots
-% % IDS vs. VDS for fixed VGS
-% cont_VGS = 1;
-% cont_VSB = 0;
-% cont_VDS = linspace(-0.1, 4, 1000)';
-% cont_IDS = current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
-%     cont_VGS, cont_VDS, cont_VSB);
-% figure
-% plot(cont_VDS, cont_IDS*1e6);
-% title('Continuity Test: I_{DS} vs. V_{DS}');
-% xlabel('V_{DS} (V)');
-% ylabel('I_{DS} (\muA)');
-% % logID vs VGS for fixed VDS, and inspect plots for discont/kinks
-% cont_VDS = 1;
-% cont_VSB = 0;
-% cont_VGS = linspace(0, 4, 1000)';
-% cont_log_IDS = log(current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
-%     cont_VGS, cont_VDS, cont_VSB));
-% figure
-% plot(cont_VGS, cont_log_IDS);
-% title('Continuity Test: ln(I_{DS}) vs. V_{GS}');
-% xlabel('V_{GS} (V)');
-% ylabel('ln(I_{DS})');
-% % inspect plots for discontinuities (problem with I),
-% % and kinks (problem with derivative of I).
-% % especially between regions of inversion (VGS plot),
-% % around VDS=0, and between sat/nonsat (VDS plots)
-% % when model is done, zoom in on these regions to check
-% 
-% % behavior at zero bias
-% IDS_zeroBias_vgs = current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
-%     0, 0, 0);
-% IDS_zeroBias_vds = current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
-%     0, 0, 0);
-% % both should be 0!
-% 
-% % weak-inversion behavior
-% % SR = (IDS/VDS)/(dID/dVDS) as a function of VGS
-% % for small VDS and several temps
-% T_sweep = 273+[-40 27 125]';
-% WI_VGS = linspace(0, 4, 1000);
-% WI_VSB = 0;
-% delta_VDS = 0.00001;
-% figure
-% hold on
-% for i = 1:3
-%     T = T_sweep(i);
-%     this_phit = constants.k * T / constants.q;
-%     % fixed VDS, but need to find slope dID/dVDS,
-%     % so pick two closely spaced VDS points
-%     WI_VDS_1 = this_phit*0.5;
-%     WI_VDS_2 = WI_VDS_1 + delta_VDS;
-%     % calculate current at each of those point,
-%     % as a function of VGS
-%     WI_IDS_1 = current(this_W, this_L, gamma,...
-%         VFB, phiF, T,...
-%         WI_VGS, WI_VDS_1, WI_VSB);
-%     WI_IDS_2 = current(this_W, this_L, gamma,...
-%         VFB, phiF, T,...
-%         WI_VGS, WI_VDS_2, WI_VSB);
-%     % calculate dID/dVDS as a function of VGS
-%     derivID = (WI_IDS_2 - WI_IDS_1)./delta_VDS;
-%     % calculate SR
-%     WI_SR = WI_IDS_1 ./ WI_VDS_1 ./ derivID;
-%     
-%     plot(WI_VGS, WI_SR);
-% end
-% plot(WI_VGS, 1.297*ones(size(WI_VGS)), '--');
-% title('WI V_{DS} Dependence Test: S_R vs. V_{GS}');
-% xlabel('V_{GS} (V)');
-% ylabel('S_R');
-% legend('T=-40\circC', 'T=27\circC', 'T=125\circC', '2(\surd\ite - 1)');
-% % should be 2(sqrt(e)-1) = 1.297 in weak inversion, 
-% % decrease toward 1 in strong inversion
-% % check against figure K.1
-% 
-% % symmetry
-% % voltages defined as in Fig. K.2,
-% % except VB, which has the opposite polarity for consistency
-% % with the rest of this model
-% sym_VG = 1;
-% sym_VB = -1;
-% sym_VX = linspace(-0.2, 0.2, 1000)';
-% sym_VD = sym_VX;
-% sym_VS = -sym_VX;
-% sym_VGS = sym_VG - sym_VS;
-% sym_VDS = sym_VD - sym_VS;
-% sym_VSB = sym_VS - sym_VB;
-% sym_IDS = current(this_W, this_L, gamma,...
-%     VFB, phiF, constants.roomTemp,...
-%     sym_VGS, sym_VDS, sym_VSB);
-% diff_VX = diff(sym_VX);
-% sym_IDS_deriv1 = diff(sym_IDS)./diff_VX;
-% sym_IDS_deriv2 = diff(sym_IDS_deriv1)./diff_VX(1:end-1);
-% figure
-% plot(sym_VX, sym_IDS);
-% title('Symmetry Test: I_{X} vs. V_{X} (Figure K.2)');
-% xlabel('V_{X} (V)');
-% ylabel('I_{X} (A)');
-% figure
-% plot(sym_VX(1:end-1), sym_IDS_deriv1);
-% title('Symmetry Test: dI_{X}/dV_{X} vs. V_{X} (Figure K.2)');
-% xlabel('V_{X} (V)');
-% ylabel('dI_{X}/dV_{X} (S)');
-% figure
-% plot(sym_VX(1:end-2), sym_IDS_deriv2);
-% title('Symmetry Test: d^2I_{X}/dV_{X}^2 vs. V_{X} (Figure K.2)');
-% xlabel('V_{X} (V)');
-% ylabel('d^2I_{X}/dV_{X}^2 (S/V)');
-% % check that ID is an odd function of Vx: VD or (-VS)
-% % if not, how to measure (ID-IS)/2?
-% % plot Ix, first and second derivatives as a function of Vx
-% % this may be a problem for velocity saturation!
-% 
-% % K2: Conductance Tests
-% 
-% % weak and moderate inversion behavior
-% % not for very low VGS because we are not modeling leakage,
-% % and dividing by a very small IDS leads to unphysically high
-% % transconductance efficiency
-% gm_VGS = linspace(0.01, 4, 1000)';
-% num_VSB = 7;
-% gm_VSB = linspace(0, 3, num_VSB)';
-% gm_VDS = 0.1;
-% diff_gm_VGS = diff(gm_VGS);
-% % plot gm/ID (transconductance efficiency) vs ID - semilogx
-% % for several VSB, finely spaced VGS
-% % from weak to strong inversion
-% figure
-% for i = 1:num_VSB
-%     this_VSB = gm_VSB(i);
-%     gm_IDS = current(this_W, this_L, gamma,...
-%         VFB, phiF, constants.roomTemp,...
-%         gm_VGS, gm_VDS, this_VSB);
-%     
-%     diff_gm_IDS = diff(gm_IDS);
-%     gm = diff_gm_IDS./diff_gm_VGS;
-%     gmeffic = gm./(gm_IDS(1:end-1));
-%     
-%     semilogx(gm_IDS(1:end-1), gmeffic);
-%     hold on
-% end
-% semilogx(logspace(-11, -4, 10)', ones(10,1)/constants.phit, '--');
-% title('Transconductance Test: g_m/I_{DS} vs. I_{DS}');
-% xlabel('I_{DS} (A)');
-% ylabel('g_m/I_{DS} (V^{-1})');
-% axis([1e-11, 1e-4, 0, 40]);
-% % curves should vary smoothly with VGS, and in weak inversion should
-% % approach 1/phit as VSB increases
-% % curves should peak and then decrease as ID decreases - not constant!
-% 
-% % output conductance
-% num_VGS = 5;
-% g0_VGS = linspace(2, 4, num_VGS)';
-% g0_VSB = 0;
-% g0_VDS = linspace(0, 4, 1000);
-% diff_g0_VDS = diff(g0_VDS);
-% figure
-% hold on
-% for i = 1:num_VGS
-%     this_VGS = g0_VGS(i);
-%     g0_IDS = current(this_W, this_L, gamma,...
-%         VFB, phiF, constants.roomTemp,...
-%         this_VGS, g0_VDS, g0_VSB);
-%     
-%     diff_g0_IDS = diff(g0_IDS);
-%     g0 = diff_g0_IDS./diff_g0_VDS;
-%     
-%     plot(g0_VDS(1:end-1), g0*1e3);
-% end
-% title('Output Conductance Test: g_0 vs. V_{DS}');
-% xlabel('V_{DS} (V)');
-% ylabel('g_0 (mS)');
-% % zoom in around sat transition
-% % should be smooth - see Fig. K.5
-% % may be problematic if we use any interpolation e.g. VDSeff
-% 
+%% Validation: Appendix K and more
+
+% all these tests for W=L=25um
+this_W = 25e-4;
+this_L = 25e-4;
+
+% rms error - remove leakage points bc we aren't doing leakage?
+
+% remember to add log plots back!
+
+% K1: DC tests
+
+% continuity and smooth behavior - densely spaced plots
+% IDS vs. VDS for fixed VGS
+cont_VGS = 1;
+cont_VSB = 0;
+cont_VDS = linspace(-0.1, 4, 1000)';
+cont_IDS = current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+    gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+    a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+    constants.roomTemp,...
+    cont_VGS, cont_VDS, cont_VSB);
+figure
+plot(cont_VDS, cont_IDS*1e6);
+title('Continuity Test: I_{DS} vs. V_{DS}');
+xlabel('V_{DS} (V)');
+ylabel('I_{DS} (\muA)');
+% logID vs VGS for fixed VDS, and inspect plots for discont/kinks
+cont_VDS = 1;
+cont_VSB = 0;
+cont_VGS = linspace(0, 4, 1000)';
+cont_log_IDS = log(current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+    gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+    a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+    constants.roomTemp,...
+    cont_VGS, cont_VDS, cont_VSB));
+figure
+plot(cont_VGS, cont_log_IDS);
+title('Continuity Test: ln(I_{DS}) vs. V_{GS}');
+xlabel('V_{GS} (V)');
+ylabel('ln(I_{DS})');
+% inspect plots for discontinuities (problem with I),
+% and kinks (problem with derivative of I).
+% especially between regions of inversion (VGS plot),
+% around VDS=0, and between sat/nonsat (VDS plots)
+% when model is done, zoom in on these regions to check
+
+% behavior at zero bias
+IDS_zeroBias_vgs = current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+    gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+    a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+    constants.roomTemp,...
+    0, 0, 0);
+IDS_zeroBias_vds = current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+    gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+    a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+    constants.roomTemp,...
+    0, 0, 0);
+% both should be 0!
+
+% weak-inversion behavior
+% SR = (IDS/VDS)/(dID/dVDS) as a function of VGS
+% for small VDS and several temps
+T_sweep = 273+[-40 27 125]';
+WI_VGS = linspace(0, 4, 1000);
+WI_VSB = 0;
+delta_VDS = 0.00001;
+figure
+hold on
+for i = 1:3
+    T = T_sweep(i);
+    this_phit = constants.k * T / constants.q;
+    % fixed VDS, but need to find slope dID/dVDS,
+    % so pick two closely spaced VDS points
+    WI_VDS_1 = this_phit*0.5;
+    WI_VDS_2 = WI_VDS_1 + delta_VDS;
+    % calculate current at each of those point,
+    % as a function of VGS
+    WI_IDS_1 = current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+        gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+        a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+        T,...
+        WI_VGS, WI_VDS_1, WI_VSB);
+    WI_IDS_2 = current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+        gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+        a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+        T,...
+        WI_VGS, WI_VDS_2, WI_VSB);
+    % calculate dID/dVDS as a function of VGS
+    derivID = (WI_IDS_2 - WI_IDS_1)./delta_VDS;
+    % calculate SR
+    WI_SR = WI_IDS_1 ./ WI_VDS_1 ./ derivID;
+    
+    plot(WI_VGS, WI_SR);
+end
+asymp = 2*(sqrt(exp(1)) - 1);
+plot(WI_VGS, asymp*ones(size(WI_VGS)), '--');
+title('WI V_{DS} Dependence Test: S_R vs. V_{GS}');
+xlabel('V_{GS} (V)');
+ylabel('S_R');
+legend('T=-40\circC', 'T=27\circC', 'T=125\circC', '2(\surd\ite - 1)');
+% should be 2(sqrt(e)-1) = 1.297 in weak inversion,
+% decrease toward 1 in strong inversion
+% check against figure K.1
+
+% symmetry
+% voltages defined as in Fig. K.2,
+% except VB, which has the opposite polarity for consistency
+% with the rest of this model
+sym_VG = 1;
+sym_VB = -1;
+sym_VX = linspace(-0.2, 0.2, 1000)';
+sym_VD = sym_VX;
+sym_VS = -sym_VX;
+sym_VGS = sym_VG - sym_VS;
+sym_VDS = sym_VD - sym_VS;
+sym_VSB = sym_VS - sym_VB;
+sym_IDS = current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+    gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+    a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+    constants.roomTemp,...
+    sym_VGS, sym_VDS, sym_VSB);
+diff_VX = diff(sym_VX);
+sym_IDS_deriv1 = diff(sym_IDS)./diff_VX;
+sym_IDS_deriv2 = diff(sym_IDS_deriv1)./diff_VX(1:end-1);
+figure
+plot(sym_VX, sym_IDS);
+title('Symmetry Test: I_{X} vs. V_{X} (Figure K.2)');
+xlabel('V_{X} (V)');
+ylabel('I_{X} (A)');
+figure
+plot(sym_VX(1:end-1), sym_IDS_deriv1);
+title('Symmetry Test: dI_{X}/dV_{X} vs. V_{X} (Figure K.2)');
+xlabel('V_{X} (V)');
+ylabel('dI_{X}/dV_{X} (S)');
+figure
+plot(sym_VX(1:end-2), sym_IDS_deriv2);
+title('Symmetry Test: d^2I_{X}/dV_{X}^2 vs. V_{X} (Figure K.2)');
+xlabel('V_{X} (V)');
+ylabel('d^2I_{X}/dV_{X}^2 (S/V)');
+% check that ID is an odd function of Vx: VD or (-VS)
+% if not, how to measure (ID-IS)/2?
+% plot Ix, first and second derivatives as a function of Vx
+% this may be a problem for velocity saturation!
+
+% K2: Conductance Tests
+
+% weak and moderate inversion behavior
+% not for very low VGS because we are not modeling leakage,
+% and dividing by a very small IDS leads to unphysically high
+% transconductance efficiency
+gm_VGS = linspace(0.01, 4, 1000)';
+num_VSB = 7;
+gm_VSB = linspace(0, 3, num_VSB)';
+gm_VDS = 0.1;
+diff_gm_VGS = diff(gm_VGS);
+% plot gm/ID (transconductance efficiency) vs ID - semilogx
+% for several VSB, finely spaced VGS
+% from weak to strong inversion
+figure
+for i = 1:num_VSB
+    this_VSB = gm_VSB(i);
+    gm_IDS = current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+        gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+        a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+        constants.roomTemp,...
+        gm_VGS, gm_VDS, this_VSB);
+    
+    diff_gm_IDS = diff(gm_IDS);
+    gm = diff_gm_IDS./diff_gm_VGS;
+    gmeffic = gm./(gm_IDS(1:end-1));
+    
+    semilogx(gm_IDS(1:end-1), gmeffic);
+    hold on
+end
+semilogx(logspace(-11, -4, 10)', ones(10,1)/constants.phit, '--');
+title('Transconductance Test: g_m/I_{DS} vs. I_{DS}');
+xlabel('I_{DS} (A)');
+ylabel('g_m/I_{DS} (V^{-1})');
+axis([1e-11, 1e-4, 0, 40]);
+% curves should vary smoothly with VGS, and in weak inversion should
+% approach 1/phit as VSB increases
+% curves should peak and then decrease as ID decreases - not constant!
+
+% output conductance
+num_VGS = 5;
+g0_VGS = linspace(2, 4, num_VGS)';
+g0_VSB = 0;
+g0_VDS = linspace(0, 4, 1000);
+diff_g0_VDS = diff(g0_VDS);
+figure
+hold on
+for i = 1:num_VGS
+    this_VGS = g0_VGS(i);
+    g0_IDS = current(this_W, this_L, gamma, gamma_a, gamma_b, gamma_c,...
+        gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+        a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
+        constants.roomTemp,...
+        this_VGS, g0_VDS, g0_VSB);
+    
+    diff_g0_IDS = diff(g0_IDS);
+    g0 = diff_g0_IDS./diff_g0_VDS;
+    
+    plot(g0_VDS(1:end-1), g0*1e3);
+end
+title('Output Conductance Test: g_0 vs. V_{DS}');
+xlabel('V_{DS} (V)');
+ylabel('g_0 (mS)');
+% zoom in around sat transition
+% should be smooth - see Fig. K.5
+% may be problematic if we use any interpolation e.g. VDSeff
+
 
 %% Plots for all Channel Lengths
 
@@ -1004,7 +1023,7 @@ VDB = VDS + VSB;
 % note that this works whether VSB is scalar or vector
 % same for VDB-VSB below
 func_psi_s0 = @(psi_s0_val) VGB - VFB -...
-    gamma*sqrt(psi_s0_val + phit*exp(...
+    gamma.*sqrt(psi_s0_val + phit*exp(...
     (psi_s0_val-2*phiF-VSB)/phit)) - psi_s0_val;
 psi_s0 = fsolve(func_psi_s0, ones(size(VGB)).*VSB);
 
@@ -1012,10 +1031,10 @@ psi_s0 = fsolve(func_psi_s0, ones(size(VGB)).*VSB);
 % of making that the difference between two solutions, we solve
 % for it directly and us it to calculate psi_sL
 func_delta_psi_s = @(delta_psi_s_val) -delta_psi_s_val...
-    -gamma*sqrt(delta_psi_s_val + psi_s0 +...
+    -gamma.*sqrt(delta_psi_s_val + psi_s0 +...
     phit*exp((delta_psi_s_val+psi_s0-...
     2*phiF-VDB)/phit)) +...
-    gamma*sqrt(psi_s0 + phit*exp(...
+    gamma.*sqrt(psi_s0 + phit*exp(...
     (psi_s0-2*phiF-VSB)/phit));
 delta_psi_s = fsolve(func_delta_psi_s, ones(size(VGB)).*(VDB-VSB));
 
@@ -1026,19 +1045,19 @@ psi_sL = psi_s0 + delta_psi_s;
 % from the way alpha is defined in the book
 alpha = 1 + gamma./(sqrt(psi_sL) + sqrt(psi_s0));
 
-QB0 = -gamma*parameters.Cox.*sqrt(psi_s0);
-QBL = -gamma*parameters.Cox.*sqrt(psi_sL);
+QB0 = -gamma.*parameters.Cox.*sqrt(psi_s0);
+QBL = -gamma.*parameters.Cox.*sqrt(psi_sL);
 
 QB_avg = (QB0 + QBL)/2;
 QI_avg = -parameters.Cox.*(VGB - VFB - (psi_s0+psi_sL)/2) - QB_avg;
 
-mu = mu0./(1-a_theta/constants.eps.*(QB_avg + eta_E*QI_avg));
+mu = mu0./(1-a_theta./constants.eps.*(QB_avg + eta_E*QI_avg));
 
 % calculate drain current - components "due to" drift and diffusion
-IDS1 = W/L.*mu*parameters.Cox .* (VGB - VFB...
-    - psi_s0 - gamma*sqrt(psi_s0) -...
+IDS1 = W/L.*mu.*parameters.Cox .* (VGB - VFB...
+    - psi_s0 - gamma.*sqrt(psi_s0) -...
     alpha.*delta_psi_s/2) .* delta_psi_s;
-IDS2 = W/L.*mu*parameters.Cox*phit.*alpha.*delta_psi_s;
+IDS2 = W/L.*mu.*parameters.Cox.*phit.*alpha.*delta_psi_s;
 IDS = IDS1 + IDS2;
 
 end
