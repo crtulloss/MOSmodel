@@ -34,10 +34,10 @@ this_W = 25e-4;
 this_L = 25e-4;
 
 % other datasets used for deltaL extraction
-data_G = ["W25000_L2000_idvg.txt","W25000_L1000_idvg.txt",...
+data_G = ["W25000_L25000_idvg.txt","W25000_L2000_idvg.txt","W25000_L1000_idvg.txt",...
     "W25000_L800_idvg.txt","W25000_L600_idvg.txt"];
 data_G = strcat(vg_dir, f, data_G);
-data_L = [2e-4;1e-4;0.8e-4;0.6e-4];
+data_L = [25e-4;2e-4;1e-4;0.8e-4;0.6e-4];
 
 % plot long-channel measured and modeled IDS vs VGS
 % using assumed parameter values
@@ -127,7 +127,7 @@ hold off;
 % run parameter extraction
 num_data_sets = 7;
 num = 73;
-[gamma, NA, VFB] = extract_gamma(data_G_25_25, num_data_sets, num);
+[gamma, NA, VFB, phi0] = extract_gamma(data_G_25_25, num_data_sets, num);
 phiF = constants.phit*log(NA/1e10);
 
 % re-plot using extracted parameters
@@ -389,6 +389,60 @@ for i = 1:num_data_sets
 end
 title('I_{DS} vs. V_{DS}: Delta L Extracted');
 xlabel('V_{DS} (V)');
+ylabel('I_{DS} (\muA)');
+hold off;
+
+num_data_sets = 7;
+num = 73;
+[gamma_a, gamma_b, gamma_c, gamma_d] = extract_gamma_short(data_G, data_L, gamma, phi0, VFB,...
+    num_data_sets, num);
+
+[a_theta_a, a_theta_b, a_theta_c] = extract_mu_short(data_G, data_L, this_W, gamma, VFB, phiF, mu0, eta_E,...
+    constants.roomTemp, num_data_sets, num, delta_L);
+
+data_G_25_6 = dlmread([vg_dir, f, 'W25000_L25000_idvg.txt']);
+L = 25e-4;
+
+figure
+hold on
+
+% for rms error calculation, assuming all weights are 1
+rms_error_vgs5 = zeros(num_data_sets, 1);
+for i = 1:num_data_sets
+    this_VGS = data_G_25_6(num*(i-1)+1:num*i, 2);
+    this_IDS = data_G_25_6(num*(i-1)+1:num*i, 4);
+    
+    this_VDS = data_G_25_6(num*i, 1);
+    this_VSB = data_G_25_6(num*i, 3);
+    
+    gamma2 = gamma*(gamma_a*sqrt(this_VSB) +gamma_b*1/(L)^2 + gamma_c*sqrt(this_VSB)/L^2 + gamma_d);
+    a_theta2 = a_theta_a/sqrt(L) + a_theta_b/L + a_theta_c/L^2;
+    
+    modeled_IDS = current(this_W, L, gamma2,...
+        VFB, phiF, mu0, a_theta, eta_E, delta_L, constants.roomTemp,...
+        this_VGS, this_VDS, this_VSB);
+    
+    plot(this_VGS, this_IDS*1e6,'*');
+    plot(this_VGS, modeled_IDS*1e6);
+    
+    notbelow_leakage =...
+        ((modeled_IDS < leakage_lim) == 0);
+    
+    modeled_IDS = modeled_IDS(notbelow_leakage);
+    this_IDS = this_IDS(notbelow_leakage);
+    
+    num_notbelow = size(this_IDS, 1);
+    
+    % calculate rms error
+    difference = this_IDS-modeled_IDS;
+    normalized_difference = difference./this_IDS;
+    sum_sq = sum(normalized_difference.^2);
+    this_rms_error = sqrt(sum_sq/num_notbelow);
+    
+    rms_error_vgs5(i) = this_rms_error;
+end
+title('I_{DS} vs. V_{GS}: Charge sharing');
+xlabel('V_{GS} (V)');
 ylabel('I_{DS} (\muA)');
 hold off;
 
@@ -944,7 +998,7 @@ end
 
 %Extracting gamma from plots of Vt against sqrt(Vsb + phi0)
 
-function [gamma, Na, VFB] = extract_gamma(data_G, num_data_sets, num) 
+function [gamma, Na, VFB, phi0] = extract_gamma(data_G, num_data_sets, num) 
     
 index_max_gm = zeros(num_data_sets,1);
 Vt = zeros(num_data_sets,1);
@@ -990,6 +1044,7 @@ gamma = lms_result(1);
 
 Na = (gamma*parameters.Cox/sqrt(2*constants.q*constants.eps))^2;
 VFB = Vt(1) - phi0 - gamma*sqrt(phi0);
+VFB = VFB - 0.07;
 
 end
 
@@ -1090,5 +1145,141 @@ lms_result = ((A'*A)\A')*B;
 slope = lms_result(1);
 yint = lms_result(2);
 delta_L = -yint/slope*1e-4;
+
+end
+
+function [a, b, c, d] = extract_gamma_short(datasets, data_L, gamma, phi0, VFB,...
+    num_data_sets, num)
+
+gamma_all = zeros(numel(datasets),num_data_sets);
+Vt0 = zeros(numel(datasets),1);
+
+for j=1:numel(datasets)
+    data_G = dlmread(datasets(j));
+    
+    Vt = zeros(num_data_sets,1);
+    Vsb = zeros(num_data_sets,1);
+
+    for i=1:num_data_sets
+        this_VGS = data_G(num*(i-1)+1:num*i, 2);
+        this_IDS = data_G(num*(i-1)+1:num*i, 4);
+
+        Vsb(i) = data_G(num*i, 3);
+        %Using maximum transconductance to linearly extrapolate the threshold
+        %voltage
+        gm = diff(this_IDS)./diff(this_VGS);
+        [gm_max , index_max_gm] = max(gm);
+        %Assuming alpha = 1
+        Vt(i) = this_VGS(index_max_gm) - this_IDS(index_max_gm)/gm_max - 0.05;
+    end
+
+    Vt0(j) = Vt(4);
+    gamma_all(j,:) = (Vt-VFB-phi0)./sqrt(phi0+Vsb);
+end
+
+Y = reshape(gamma_all,[],1)/gamma;
+X1 = kron(sqrt(Vsb),ones(numel(data_L),1));
+X2 = kron(ones(numel(Vsb),1),1./(data_L).^2);
+X3 = X1.*X2;
+X4 = ones(size(X1,1),1);
+X = [X1 X2 X3 X4];
+B = X\Y;
+
+error1 = Y - X*B;
+error1 = (error1./Y).^2*100;
+
+a = B(1);
+b = B(2);
+c = B(3);
+d = B(4);
+
+end
+
+function [a, b, c] = extract_mu_short(datasets, data_L, W, gamma, VFB, phiF, mu0, eta_E,...
+    temp, num_data_sets, num, delta_L)
+
+a_theta_L = zeros(numel(datasets),1);
+a_theta = zeros(num_data_sets,1);
+
+% only matters for appendix K WI VDS-dependence test,
+% where temperature is allowed to change
+% otherwise phit = 0.026V
+phit = constants.k * temp / constants.q;
+phiF = phiF*phit/constants.phit;
+
+for j = 1:numel(datasets)
+    data_G = dlmread(datasets(j));
+    for i = 1:num_data_sets
+        VDS = data_G(num*i, 1);
+        VSB = data_G(num*i, 3);
+
+        Vm = VFB + 2*phiF + gamma*sqrt(2*phiF + VSB);
+        index = find(data_G(:,2)>Vm+2,1);
+
+        VGS = data_G(num*(i-1)+index:num*i, 2);
+        IDS = data_G(num*(i-1)+index:num*i, 4);
+
+        VGB = VGS + VSB;
+        VDB = VDS + VSB;
+
+        % calculate drain and source surface potentials
+        func_psi_s0 = @(psi_s0_val) VGB - VFB -...
+            gamma*sqrt(psi_s0_val + phit*exp(...
+            (psi_s0_val-2*phiF-VSB)/phit)) - psi_s0_val;
+        psi_s0 = fsolve(func_psi_s0, ones(size(VGB))*VSB);
+
+        % the difference psi_sL - psi_s0 can be small, so instead
+        % of making that the difference between two solutions, we solve
+        % for it directly and us it to calculate psi_sL
+        func_delta_psi_s = @(delta_psi_s_val) -delta_psi_s_val...
+            -gamma*sqrt(delta_psi_s_val + psi_s0 +...
+            phit*exp((delta_psi_s_val+psi_s0-...
+            2*phiF-VDB)/phit)) +...
+            gamma*sqrt(psi_s0 + phit*exp(...
+            (psi_s0-2*phiF-VSB)/phit));
+        delta_psi_s = fsolve(func_delta_psi_s, ones(size(VGB))*(VDB-VSB));
+
+        % now calculate psi_sL
+        psi_sL = psi_s0 + delta_psi_s;
+
+        % alpha calculation - note that this is a DIFFERENT definition
+        % from the way alpha is defined in the book
+        alpha = 1 + gamma./(sqrt(psi_sL) + sqrt(psi_s0));
+
+        QB0 = -gamma*parameters.Cox.*sqrt(psi_s0);
+        QBL = -gamma*parameters.Cox.*sqrt(psi_sL);
+        QB_avg = (QB0 + QBL)/2;
+
+        QI_avg = -parameters.Cox.*(VGB - VFB - (psi_s0+psi_sL)/2) - QB_avg;
+
+        % calculate drain current - components "due to" drift and diffusion
+        % calculate drain current
+        IDS1 = W/(data_L(j)-delta_L)*mu0*parameters.Cox * (VGB - VFB - psi_s0 - gamma*sqrt(psi_s0)...
+            - alpha.*delta_psi_s/2).*delta_psi_s;
+        IDS2 = W/(data_L(j)-delta_L)*mu0*parameters.Cox*phit*alpha.*delta_psi_s;
+        IDS_model = IDS1+IDS2;
+
+        a_theta(i) = (QB_avg+eta_E*QI_avg)\(1-IDS_model./IDS)*constants.eps;
+    end
+
+    a_theta_L(j) = mean(a_theta);
+end
+
+figure;
+plot(data_L,a_theta_L,'*');
+
+Y = a_theta_L;
+X1 = 1./sqrt(data_L);
+X2 = 1./data_L;
+X3 = 1./(data_L).^2;
+X = [X1 X2 X3];
+B = X\Y;
+
+error1 = Y - X*B;
+error1 = (error1./Y).^2*100
+
+a = B(1);
+b = B(2);
+c = B(3);
 
 end
