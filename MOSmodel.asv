@@ -397,13 +397,13 @@ num = 73;
 [gamma_a, gamma_b, gamma_c, gamma_d] = extract_gamma_short(data_G, data_L,...
     gamma, phi0, VFB+0.07, num_data_sets, num);
 
-[a_theta_a, a_theta_b, a_theta_c, a_theta_d, eta_a, eta_b, eta_c, eta_d]...
-    = extract_mu_short(data_G, data_L, this_W, gamma, VFB, phiF, mu0,...
-    a_theta, eta_E, delta_L, constants.roomTemp, num_data_sets, num);
+[a_theta_a, a_theta_b, a_theta_c, eta_a, eta_b, eta_c] = extract_mu_short(...
+    data_G, data_L, this_W, gamma, VFB, phiF, mu0, a_theta, eta_E, delta_L,...
+    constants.roomTemp, num_data_sets, num);
 
-data_G_25_6 = dlmread([vg_dir, f, 'W25000_L600_idvg.txt']);
-data_D_25_6 = dlmread([vd_dir, f, 'W25000_L600_idvd.txt']);
-L = 0.6e-4;
+data_G_25_6 = dlmread([vg_dir, f, 'W25000_L25000_idvg.txt']);
+data_D_25_6 = dlmread([vd_dir, f, 'W25000_L25000_idvd.txt']);
+L = 25e-4;
 
 figure
 hold on
@@ -419,8 +419,8 @@ for i = 1:num_data_sets
 
     modeled_IDS = current(this_W, L, gamma, gamma_a, gamma_b, gamma_c,...
         gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
-        a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
-        constants.roomTemp, this_VGS, this_VDS, this_VSB);
+        eta_a, eta_b, eta_c, delta_L, constants.roomTemp, this_VGS,...
+        this_VDS, this_VSB);
     
     plot(this_VGS, this_IDS*1e6,'*');
     plot(this_VGS, modeled_IDS*1e6);
@@ -462,8 +462,8 @@ for i = 1:num_data_sets
     
     modeled_IDS = current(this_W, L, gamma, gamma_a, gamma_b, gamma_c,...
         gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
-        a_theta_d, eta_a, eta_b, eta_c, eta_d, delta_L,...
-        constants.roomTemp, this_VGS, this_VDS, this_VSB);
+        eta_a, eta_b, eta_c, delta_L, constants.roomTemp, this_VGS,...
+        this_VDS, this_VSB);
     
     plot(this_VDS, this_IDS*1e6,'*');
     plot(this_VDS, modeled_IDS*1e6);
@@ -979,14 +979,14 @@ hold off;
 
 %% Current-Calculating Function
 
-function IDS = current(W, L, gamma, gamma_a, gamma_b, gamma_c, gamma_d,...
-        VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c, a_theta_d,...
-        eta_a, eta_b, eta_c, eta_d, delta_L, temp,VGS, VDS, VSB)
+function IDS = current(W, L, gamma, gamma_a, gamma_b, gamma_c,...
+        gamma_d, VFB, phiF, mu0, a_theta_a, a_theta_b, a_theta_c,...
+        eta_a, eta_b, eta_c, delta_L, temp, VGS, VDS, VSB)
 
 gamma = gamma*(gamma_a.*sqrt(VSB) + gamma_b/L^2 + gamma_c.*sqrt(VSB)...
     /L^2 + gamma_d);
-a_theta = a_theta_a/sqrt(L) + a_theta_b/L + a_theta_c/L^2 + a_theta_d;
-eta_E = eta_a/sqrt(L) + eta_b/L + eta_c/L^2 + eta_d;
+a_theta = a_theta_a/sqrt(L) + a_theta_b/L + a_theta_c/L^2;
+eta_E = eta_a/sqrt(L) + eta_b/L + eta_c/L^2;
     
 L = L - delta_L;
 
@@ -1255,9 +1255,9 @@ d = B(4);
 end
 
 %Extracting the variations in a_theta and eta_E for short channels
-function [a, b, c, d, a2, b2, c2, d2] = extract_mu_short(datasets,... 
-    data_L, W, gamma, VFB, phiF, mu0, a_theta_long, eta_E_long, delta_L,...
-    temp, num_data_sets, num)
+function [a, b, c, a2, b2, c2] = extract_mu_short(datasets, data_L, W,...
+    gamma, VFB, phiF, mu0, a_theta_long, eta_E_long, delta_L, temp,...
+    num_data_sets, num)
 
 a_theta_L = zeros(numel(datasets),1);
 a_theta = zeros(num_data_sets,1);
@@ -1346,8 +1346,8 @@ Y = a_theta_L;
 X1 = 1./sqrt(data_L);
 X2 = 1./data_L;
 X3 = 1./(data_L).^2;
-X4 = ones(numel(data_L),1);
-X = [X1 X2 X3 X4];
+X4 = ones
+X = [X1 X2 X3];
 B = X\Y;
 
 %Error of the fit coefficients
